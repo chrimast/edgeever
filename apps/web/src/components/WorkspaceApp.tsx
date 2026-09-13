@@ -985,11 +985,13 @@ export const WorkspaceApp = ({
     editorContentAlignment,
     imageCompressionEnabled,
     memoListWidth,
+    notebookSidebarCollapsed,
     resetMemoListWidth,
     setDesktopFocusMode,
     setEditorContentAlignment,
     setImageCompressionEnabled,
     setMemoListWidth,
+    setNotebookSidebarCollapsed,
     setShortcutSettings,
     shortcutSettings,
   } = useWorkspacePreferences();
@@ -3282,11 +3284,13 @@ export const WorkspaceApp = ({
               ? "edgeever-workspace-grid--focus"
               : rightView === "editor"
                 ? "edgeever-workspace-grid--editor"
-                : "edgeever-workspace-grid--single-right"
+                : "edgeever-workspace-grid--single-right",
+            !desktopFocusModeActive && desktopNotebookSidebarCollapsed && "edgeever-workspace-grid--sidebar-collapsed"
           )}
           style={{ "--memo-list-width": `${memoListWidth}px` } as CSSProperties}
         >
           <aside
+            id="edgeever-notebook-sidebar"
             className={cn(
               "edgeever-workspace-sidebar min-h-0 border-r",
               desktopFocusModeActive
@@ -3352,6 +3356,8 @@ export const WorkspaceApp = ({
                   demoMode={demoMode}
                   onResetDemo={() => setDemoResetConfirmationOpen(true)}
                   isResettingDemo={resetDemoMutation.isPending}
+                  collapsed={desktopNotebookSidebarCollapsed}
+                  onToggleCollapsed={() => setNotebookSidebarCollapsed(!notebookSidebarCollapsed)}
                 />
               </Suspense>
             )}

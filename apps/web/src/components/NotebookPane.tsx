@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronDown,
   Plus,
+  LayoutGrid,
   LayoutList,
   LayoutTemplate,
   BookPlus,
@@ -64,6 +65,9 @@ import { PluginToolbarMenu } from "./plugins/PluginToolbarMenu";
 
 const DesktopSyncIssuesDialog = lazy(() => import("./DesktopSyncIssuesDialog").then((module) => ({ default: module.DesktopSyncIssuesDialog })));
 
+const DesktopSyncIssuesDialog = lazy(() => import("./DesktopSyncIssuesDialog").then((module) => ({ default: module.DesktopSyncIssuesDialog })));
+
+const NOTEBOOK_SIDEBAR_ID = "edgeever-notebook-sidebar";
 const NOTEBOOK_DRAG_SCROLL_EDGE_PX = 56;
 const NOTEBOOK_DRAG_SCROLL_MAX_STEP_PX = 18;
 const DESKTOP_DOWNLOAD_URL = "https://github.com/tianma-if/edgeever/releases/latest";
@@ -233,6 +237,105 @@ const SidebarSectionLabel = ({ icon, label }: { icon: ReactNode; label: string }
   </div>
 );
 
+const SidebarCollapseButton = ({
+  collapsed,
+  onToggle,
+  className,
+  tooltipSide = "bottom",
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+  className?: string;
+  tooltipSide?: "top" | "right" | "bottom" | "left";
+}) => {
+  const { t } = useTranslation();
+  const label = t(collapsed ? "notebookPane.expandSidebar" : "notebookPane.collapseSidebar");
+
+  return (
+    <TooltipProvider delayDuration={0} skipDelayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70",
+              className
+            )}
+            aria-label={label}
+            aria-expanded={!collapsed}
+            aria-controls={NOTEBOOK_SIDEBAR_ID}
+            onClick={onToggle}
+          >
+            {collapsed ? <ChevronsRight className="h-4 w-4" aria-hidden="true" /> : <ChevronsLeft className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side={tooltipSide}>{label}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+const SidebarRailButton = ({
+  active = false,
+  icon,
+  label,
+  onClick,
+  disabled = false,
+}: {
+  active?: boolean;
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button
+        type="button"
+        disabled={disabled}
+        aria-current={active ? "page" : undefined}
+        aria-label={label}
+        onClick={onClick}
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70 disabled:cursor-not-allowed disabled:opacity-50",
+          active && "bg-emerald-50 text-emerald-600"
+        )}
+      >
+        {icon}
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="right">{label}</TooltipContent>
+  </Tooltip>
+);
+
+const CreateMemoTypeItems = ({ onCreateMemo }: { onCreateMemo: (kind?: DiagramKind) => void }) => {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <DropdownMenuItem onSelect={() => onCreateMemo()}>
+        <FileText className="h-4 w-4" />
+        {t("diagram.normalNote")}
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => onCreateMemo("mind-map")}>
+        <Network className="h-4 w-4" />
+        {t("diagram.mindMap")}
+        <DiagramBetaBadge />
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => onCreateMemo("flowchart")}>
+        <Workflow className="h-4 w-4" />
+        {t("diagram.flowchart")}
+        <DiagramBetaBadge />
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => onCreateMemo("architecture")}>
+        <Boxes className="h-4 w-4" />
+        {t("diagram.architecture")}
+        <DiagramBetaBadge />
+      </DropdownMenuItem>
+    </>
+  );
+};
+
 const getSyncStatusLabel = (summary: SyncQueueSummary, isOnline: boolean, isSyncing: boolean, t: ReturnType<typeof useTranslation>["t"]) => {
   if (!isOnline) {
     return summary.total > 0 ? t("notebookPane.sync.offlineWithPending", { count: summary.total }) : t("notebookPane.sync.offline");
@@ -392,6 +495,8 @@ export const NotebookPane = ({
   demoMode = false,
   onResetDemo,
   isResettingDemo = false,
+  collapsed = false,
+  onToggleCollapsed,
 }: {
   repository: EdgeEverRepository;
   user: AuthUser | null;
@@ -429,6 +534,8 @@ export const NotebookPane = ({
   demoMode?: boolean;
   onResetDemo?: () => void;
   isResettingDemo?: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }) => {
   const { t } = useTranslation();
   // Temporarily keep template actions out of the primary workspace navigation.
@@ -528,7 +635,8 @@ export const NotebookPane = ({
   }, [selectedNotebookId, tree]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden" data-notebook-sidebar-collapsed={collapsed ? "true" : "false"}>
+      <div className={cn("flex min-h-0 flex-1 flex-col", collapsed && "hidden")}>
       <header className="flex h-[calc(4rem+env(safe-area-inset-top))] shrink-0 items-end justify-between border-b border-slate-200 px-4 pb-3 pt-[env(safe-area-inset-top)] lg:hidden">
         <div>
           <div className="text-base font-semibold tracking-normal">{t("notebookPane.notebooks")}</div>
@@ -735,6 +843,7 @@ export const NotebookPane = ({
           </div>
         )}
 
+      </div>
       </div>
 
       <footer className="edgeever-workspace-sidebar-footer border-t border-slate-200 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-sm">
@@ -953,6 +1062,7 @@ export const NotebookPane = ({
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 };

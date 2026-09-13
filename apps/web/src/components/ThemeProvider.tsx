@@ -98,6 +98,16 @@ export const isMarkdownLightTheme = (theme: MarkdownThemeName): boolean =>
 
 export const EDITOR_THEME_NAMES = [
   "default",
+  "letter",
+  "guide",
+  "blueprint",
+  "journal",
+  "stance",
+  "stub",
+  "brief",
+  "outline",
+  "zen",
+  "grove",
   "minimal-emerald",
   "outline-emerald",
   "wechat-green",

@@ -389,6 +389,30 @@ export const EditorToolbar = ({
           ) : (
             <>
           <Select
+            value={editorTheme}
+            onValueChange={(value) => setEditorTheme(value)}
+          >
+            <SelectTrigger
+              aria-label={t("editorToolbar.editorTheme")}
+              className="h-8 w-[6.5rem] shrink-0 whitespace-nowrap border-slate-200 bg-card text-xs text-slate-800 [&>span]:truncate [&>span]:whitespace-nowrap"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="min-w-[10rem] bg-card border border-slate-200 rounded-md py-1 shadow-md">
+              {namedEditorThemes.map((theme) => (
+                <SelectItem key={theme} value={theme}>
+                  {t(`settings.editorThemes.${theme}`)}
+                </SelectItem>
+              ))}
+              {customEditorThemes.map((theme) => (
+                <SelectItem key={theme.id} value={theme.id}>
+                  {theme.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <MemoEditorToolbarDivider className="hidden sm:block" />
+          <Select
             value={blockValue}
             disabled={disabled}
             onValueChange={(value) => setBlock(value)}

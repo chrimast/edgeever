@@ -2,7 +2,6 @@ import { useRef, useState, useEffect, useCallback, useMemo, lazy, Suspense, type
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
-import type { Mark } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -161,6 +160,7 @@ import {
   type ShortcutSettings,
 } from "@/lib/app-helpers";
 import { copyEditorToWeChat, copyMarkdownToWeChat } from "@/lib/wechat-copy";
+import { isPaperEditorTheme, publishEditorCssVars, resolvePaperEditorTheme } from "@/lib/publish-layout";
 import { ThemeBlock } from "./ThemeBlock";
 import { downloadMarkdownFile } from "@/lib/note-markdown-export";
 import { NOTE_HTML_FULL_STYLES } from "@/lib/note-html-export-assets";
@@ -204,7 +204,13 @@ import {
   getRichTextAiSelectionReplacement,
   normalizeAiSelectionReplacement,
 } from "@/lib/ai-selection-replacement";
-import { getAttachmentFilenameFromLabel, getAttachmentResourceId } from "@/lib/attachment-links";
+import { getAttachmentResourceId } from "@/lib/attachment-links";
+import {
+  getAttachmentHoverTarget,
+  getAttachmentLinkFromEventTarget,
+  isInsideAttachmentHoverRegion,
+  resolveAttachmentMenuFilename,
+} from "./editor/attachment-resource-menu";
 import {
   IMAGE_MENU_HIDE_EVENT,
   IMAGE_MENU_SHOW_EVENT,
@@ -244,6 +250,7 @@ import {
   type ResourceDialogState,
   type ResourceMenuTarget,
 } from "./editor/useEditorResourceActions";
+import { removeAttachmentAt, renameAttachmentAt } from "./editor/attachment-editor-range";
 
 const SUPPORTED_PASTE_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif"]);
 const MOBILE_EDITOR_QUERY = "(max-width: 639px)";
@@ -1608,18 +1615,19 @@ const RichEditorPane = ({
 
   const showAttachmentMenu = useCallback((target: EventTarget | null) => {
     if (isMobileViewport) return false;
-    const link = getAttachmentLinkFromEventTarget(target);
-    if (!link) return false;
+    const hover = getAttachmentHoverTarget(target);
+    if (!hover) return false;
 
-    const href = link.getAttribute("href") || "";
+    const href = hover.link.getAttribute("href") || "";
     cancelResourceMenuHide();
     setNoteLinkHintPosition(null);
     showResourceMenu({
       kind: "attachment",
+      element: hover.toolbar ?? undefined,
       url: href,
-      filename: getAttachmentFilenameFromLabel(link.textContent || "") || getAttachmentResourceId(href) || "attachment",
+      filename: resolveAttachmentMenuFilename(hover, href),
       resourceId: getAttachmentResourceId(href),
-      position: getNoteLinkHintPosition(link),
+      position: hover.toolbar ? { left: 0, top: 0, placement: "above" } : getNoteLinkHintPosition(hover.link),
     });
     return true;
   }, [cancelResourceMenuHide, isMobileViewport, showResourceMenu]);
@@ -1648,16 +1656,9 @@ const RichEditorPane = ({
   }, [showAttachmentMenu, showEditorLinkOpenHint]);
 
   const handleEditorMouseOut = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
-    const attachmentLink = getAttachmentLinkFromEventTarget(event.target);
-    if (attachmentLink) {
-      const relatedTarget = event.relatedTarget;
-      if (
-        relatedTarget instanceof Node &&
-        (attachmentLink.contains(relatedTarget) ||
-          (relatedTarget instanceof Element && relatedTarget.closest("[data-edgeever-resource-menu]")))
-      ) {
-        return;
-      }
+    const attachmentHover = getAttachmentHoverTarget(event.target);
+    if (attachmentHover) {
+      if (isInsideAttachmentHoverRegion(attachmentHover, event.relatedTarget)) return;
       scheduleResourceMenuHide();
       return;
     }
@@ -3180,38 +3181,13 @@ const RichEditorPane = ({
   const replaceAttachmentLabel = useCallback((target: AttachmentMenuTarget, filename: string) => {
     const activeEditor = editorRef.current;
     if (!isEditorReady(activeEditor)) return;
-    const range = findAttachmentLinkRange(activeEditor, target.url);
-    if (!range) return;
-    activeEditor.view.dispatch(
-      activeEditor.state.tr.replaceWith(
-        range.from,
-        range.to,
-        activeEditor.schema.text(t("editor.attachmentLabel", { filename }), [...range.marks])
-      )
-    );
+    renameAttachmentAt(activeEditor, target, filename, t("editor.attachmentLabel", { filename }));
   }, [t]);
 
   const removeAttachmentLink = useCallback((target: AttachmentMenuTarget) => {
     const activeEditor = editorRef.current;
     if (!isEditorReady(activeEditor)) return;
-    const range = findAttachmentLinkRange(activeEditor, target.url);
-    if (!range) return;
-
-    const resolved = activeEditor.state.doc.resolve(range.from);
-    let deleteFrom = range.from;
-    let deleteTo = range.to;
-    for (let depth = resolved.depth; depth > 0; depth -= 1) {
-      const node = resolved.node(depth);
-      if (node.type.name !== "paragraph") continue;
-      const nodeFrom = resolved.before(depth);
-      if (range.from === nodeFrom + 1 && range.to === nodeFrom + node.nodeSize - 1) {
-        deleteFrom = nodeFrom;
-        deleteTo = nodeFrom + node.nodeSize;
-      }
-      break;
-    }
-
-    activeEditor.view.dispatch(activeEditor.state.tr.delete(deleteFrom, deleteTo));
+    removeAttachmentAt(activeEditor, target);
   }, []);
 
   const getResourceActionFailure = useCallback((target: ResourceMenuTarget) =>
@@ -4215,9 +4191,17 @@ const RichEditorPane = ({
             : "custom"
         }
         style={{
-          "--editor-body-font-size": `${MEMO_CONTENT_STYLE.body.fontSize}px`,
-          "--editor-body-line-height": String(MEMO_CONTENT_STYLE.body.lineHeight / MEMO_CONTENT_STYLE.body.fontSize),
-          "--editor-paragraph-spacing": `${MEMO_CONTENT_STYLE.body.paragraphSpacing}px`,
+          ...(isPaperEditorTheme(editorTheme)
+            ? publishEditorCssVars(
+                editorTheme,
+                resolvePaperEditorTheme(editorTheme)?.palette ?? "emerald",
+                isMobileViewport ? "phone" : "desktop",
+              )
+            : {
+                "--editor-body-font-size": `${MEMO_CONTENT_STYLE.body.fontSize}px`,
+                "--editor-body-line-height": String(MEMO_CONTENT_STYLE.body.lineHeight / MEMO_CONTENT_STYLE.body.fontSize),
+                "--editor-paragraph-spacing": `${MEMO_CONTENT_STYLE.body.paragraphSpacing}px`,
+              }),
           "--memo-content-divider-spacing": `${MEMO_CONTENT_STYLE.divider.marginVertical}px`,
           ...(editorTheme !== "default" &&
           editorTheme !== "minimal-emerald" &&
@@ -4388,7 +4372,14 @@ const RichEditorPane = ({
               </div>
             )}
           </div>
-          {!isMobileViewport && !useMobilePlainTextEditor && !useMarkdownSourceEditor && (
+          {!isMobileViewport && !useMobilePlainTextEditor && !useMarkdownSourceEditor && phonePreviewOpen && (
+            <EditorPhonePreview
+              editor={editor}
+              title={getEditableMemoTitle(memo?.title)}
+              scrollContainer={editorScrollContainer}
+            />
+          )}
+          {!isMobileViewport && !useMobilePlainTextEditor && !useMarkdownSourceEditor && !phonePreviewOpen && (
             <EditorOutline
               editor={editor}
               scrollContainer={editorScrollContainer}

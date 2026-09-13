@@ -142,15 +142,12 @@ type LocalTiptapEditorSharedProps = {
   ref: Ref<LocalTiptapEditorRef>;
   locale: "zh-CN" | "en-US";
   theme: "light" | "dark";
-};
-
-/** Editable note body with toolbar (create / rich edit). */
-type LocalTiptapEditorModeProps = LocalTiptapEditorSharedProps & {
-  mode?: "editor";
+  /** Live-switchable. The same DomWebView stays mounted across viewer → editor. */
+  mode?: "editor" | "viewer";
   aiPromptsJson?: string;
   autoFocus?: boolean;
-  onChange: (content: EditorDoc) => Promise<void>;
-  onPickImage: () => Promise<void>;
+  onChange?: (content: EditorDoc) => Promise<void>;
+  onPickImage?: () => Promise<void>;
   onAiRequest?: (requestJson: string) => Promise<void>;
   onAiCancel?: (requestId: string) => Promise<void>;
   onReady: (startupMs: number) => Promise<void>;
@@ -172,7 +169,7 @@ type LocalTiptapViewerModeProps = LocalTiptapEditorSharedProps & {
   onDoublePress?: () => Promise<void>;
 };
 
-type LocalTiptapEditorProps = LocalTiptapEditorModeProps | LocalTiptapViewerModeProps;
+type LocalTiptapEditorProps = LocalTiptapEditorSharedProps;
 
 type MermaidRendererProps = {
   diagramsJson: string;
@@ -751,15 +748,16 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
       props.locale,
       (source) => onLoadResourceRef.current(source),
       {
-        readOnly: isViewer,
+        readOnly: () => isViewerRef.current,
         // NodeView binds ⋯ / image taps directly — Android WebView often drops
         // click after pointerdown preventDefault, so PM handleClick is not enough.
         onResourcePress: (targetJson) => onResourcePressRef.current?.(targetJson),
         onImagePreview: (payloadJson) => onImagePreviewRef.current?.(payloadJson),
       }
     ),
-    [isViewer, props.baseUrl, props.locale]
+    [props.baseUrl, props.locale]
   );
+  const diagramViewer = isViewer && Boolean(props.mode === "viewer" && props.visualDiagramNote);
   const mermaidCodeBlockExtension = useMemo(
     () => createMobileCodeBlockExtension(
       props.locale,
@@ -843,7 +841,7 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
       },
     },
     onUpdate: ({ editor: activeEditor, transaction }) => {
-      if (isViewer || !onChangeRef.current) {
+      if (isViewerRef.current || !onChangeRef.current) {
         return;
       }
       if (transaction.getMeta(TRANSIENT_IMAGE_UPLOAD_META)) {
@@ -860,7 +858,7 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
   });
 
   const flush = useCallback(() => {
-    if (isViewer || !editor || editor.isDestroyed || !onChangeRef.current) {
+    if (isViewerRef.current || !editor || editor.isDestroyed || !onChangeRef.current) {
       return;
     }
     if (changeTimerRef.current !== null) {
@@ -868,7 +866,7 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
       changeTimerRef.current = null;
     }
     void onChangeRef.current(getPersistableEditorDoc(editor.getJSON() as EditorDoc, props.baseUrl));
-  }, [editor, isViewer, props.baseUrl]);
+  }, [editor, props.baseUrl]);
 
   const setContent = useCallback((contentJsonSerialized: DOMValue) => {
     if (!editor || editor.isDestroyed || typeof contentJsonSerialized !== "string") {
@@ -1396,45 +1394,31 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
   );
 
   useEffect(() => {
+    if (!editor || editor.isDestroyed) {
+      return;
+    }
+    editor.setEditable(!isViewer);
+    editor.view.dom.classList.toggle("edgeever-viewer-content", isViewer);
+  }, [editor, isViewer]);
+
+  useEffect(() => {
     if (!editor) {
       return;
     }
 
     void onReadyRef.current(Math.round(performance.now() - startedAtRef.current));
-    let focusFrame = 0;
-    let focusRetry: number | null = null;
-    if (autoFocus) {
-      const focusAtEnd = () => {
-        if (!editor.isDestroyed) {
-          editor.commands.focus("end");
-        }
-      };
-      focusFrame = window.requestAnimationFrame(focusAtEnd);
-      // The DOM view can report ready one bridge turn before Android attaches
-      // its input connection. Keep the HTML selection ready for the native IME
-      // handoff without delaying the editor's first visible frame.
-      focusRetry = window.setTimeout(focusAtEnd, 120);
-    }
     const handlePageHide = () => flush();
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         flush();
       }
     };
-    if (!isViewer) {
-      window.addEventListener("pagehide", handlePageHide);
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-    }
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.cancelAnimationFrame(focusFrame);
-      if (focusRetry !== null) {
-        window.clearTimeout(focusRetry);
-      }
-      if (!isViewer) {
-        window.removeEventListener("pagehide", handlePageHide);
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
-      }
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (changeTimerRef.current !== null) {
         window.clearTimeout(changeTimerRef.current);
       }
@@ -1445,7 +1429,27 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
         window.clearTimeout(aiUndoTimerRef.current);
       }
     };
-  }, [autoFocus, editor, flush, isViewer]);
+  }, [editor, flush]);
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed || isViewer || !autoFocus) {
+      return;
+    }
+    const focusAtEnd = () => {
+      if (!editor.isDestroyed) {
+        editor.commands.focus("end");
+      }
+    };
+    const focusFrame = window.requestAnimationFrame(focusAtEnd);
+    // The DOM view can report ready one bridge turn before Android attaches
+    // its input connection. Keep the HTML selection ready for the native IME
+    // handoff without delaying the editor's first visible frame.
+    const focusRetry = window.setTimeout(focusAtEnd, 120);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.clearTimeout(focusRetry);
+    };
+  }, [autoFocus, editor, isViewer]);
 
   // Keep the viewer in sync when the parent swaps memo content.
   useEffect(() => {
@@ -2460,7 +2464,7 @@ const createProtectedImageExtension = (
   locale: "zh-CN" | "en-US",
   loadResource: (source: string) => Promise<string | null>,
   options?: {
-    readOnly?: boolean;
+    readOnly?: boolean | (() => boolean);
     onResourcePress?: (targetJson: string) => void | Promise<void>;
     onImagePreview?: (payloadJson: string) => void | Promise<void>;
   }
@@ -2481,9 +2485,14 @@ const createProtectedImageExtension = (
   },
   addNodeView() {
     return ({ editor, getPos, node }) => {
-      const readOnly = Boolean(options?.readOnly) || !editor.isEditable;
+      const isReadOnly = () => {
+        const option = options?.readOnly;
+        const fromOption = typeof option === "function" ? option() : Boolean(option);
+        return fromOption || !editor.isEditable;
+      };
+      const readOnly = isReadOnly();
       const updateWidth = (width: number) => {
-        if (readOnly) {
+        if (isReadOnly()) {
           return;
         }
         const position = getPos();
@@ -2708,18 +2717,18 @@ const createProtectedImageExtension = (
       actionButton.setAttribute("aria-label", locale === "en-US" ? "Image actions" : "图片操作");
       actionButton.textContent = "⋯";
       bindImageActionButton(wrapper, actionButton);
-      if (readOnly) {
-        image.style.cursor = "zoom-in";
-        image.addEventListener("click", (event) => {
-          // Ignore taps that originated on the ⋯ control (event target would be button).
-          if (event.target instanceof Element && event.target.closest(".edgeever-image-actions")) {
-            return;
-          }
-          event.preventDefault();
-          event.stopPropagation();
-          emitImagePreview(wrapper);
-        });
-      }
+      image.addEventListener("click", (event) => {
+        if (!isReadOnly()) {
+          return;
+        }
+        // Ignore taps that originated on the ⋯ control (event target would be button).
+        if (event.target instanceof Element && event.target.closest(".edgeever-image-actions")) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        emitImagePreview(wrapper);
+      });
       wrapper.append(loading, image, actionButton, sizeControls.dom);
       const imageType = node.type;
       let requestId = 0;
@@ -2856,7 +2865,7 @@ const createProtectedImageExtension = (
         },
         selectNode: () => {
           wrapper.classList.add("is-selected");
-          sizeControls.setVisible(!readOnly && displayReady);
+          sizeControls.setVisible(!isReadOnly() && displayReady);
         },
         deselectNode: () => {
           wrapper.classList.remove("is-selected");

@@ -188,6 +188,7 @@ export const WorkspaceScreen = ({
     toggleVisibleSelection,
   } = useMobileWorkspaceSelection();
   const memoDraftPrefetchRef = useRef(new Map<string, Promise<MobileMemoDraft | null>>());
+  const memoDraftValueRef = useRef(new Map<string, MobileMemoDraft | null>());
   const processedShareUrlRef = useRef<string | null>(null);
   const onIncomingShareHandledRef = useRef(onIncomingShareHandled);
   onIncomingShareHandledRef.current = onIncomingShareHandled;
@@ -454,7 +455,10 @@ export const WorkspaceScreen = ({
     if (cached) {
       return cached;
     }
-    const pending = readMobileMemoDraft(memoId);
+    const pending = readMobileMemoDraft(memoId).then((draft) => {
+      memoDraftValueRef.current.set(memoId, draft);
+      return draft;
+    });
     memoDraftPrefetchRef.current.set(memoId, pending);
     return pending;
   }, []);
@@ -1186,6 +1190,7 @@ export const WorkspaceScreen = ({
 
   // Full-tree create (same as rich edit) — never stack DomWebView inside RN Modal over
   // list/detail WebViews; that breaks Android soft-input attachment.
+  // Existing-note edits stay on the detail viewer and switch it in place.
   if (createOpen) {
     return (
       <CreateMemoModal
@@ -1285,6 +1290,8 @@ export const WorkspaceScreen = ({
       ) : null}
 
       <MemoDetailModal
+        editingSession={richEditingSession}
+        imageCompressionEnabled={imageCompressionEnabled}
         initialSearchQuery={selectedMemoId ? searchText.trim() : ""}
         isDeleting={deleteMemoMutation.isPending}
         isLoading={memoDetailQuery.isLoading}
@@ -1293,7 +1300,9 @@ export const WorkspaceScreen = ({
         isSharing={shareMemoMutation.isPending}
         memo={selectedMemo}
         notebookName={notebooks.find((notebook) => notebook.id === selectedMemo?.notebookId)?.name ?? "未分类"}
+        notebooks={notebooks}
         onClose={closeDetail}
+        onCloseEditor={closeRichEditor}
         onDelete={handleDeleteMemo}
         onDeleteResource={handleDeleteResource}
         onRichEdit={(memo, initialFocus) => void openRichEditor(memo, initialFocus)}
@@ -1310,6 +1319,7 @@ export const WorkspaceScreen = ({
         onShare={(memo) => shareMemoMutation.mutate(memo)}
         syncError={selectedMemoSyncError}
         syncStatus={selectedMemoSyncStatus}
+        updateMutation={localUpdateMemoMutation}
         visible={Boolean(selectedMemoId)}
       />
 
