@@ -20,10 +20,9 @@ import {
   canReplaceAiSource,
   createNativeUnsupportedContentExtensions,
   docToMarkdown,
-  getDefaultAiAction,
   getDefaultAiTargetLanguage,
   readStoredAiAssistantLastActionPreference,
-  resolveAiAssistantLastAction,
+  resolveAiAssistantOpenAction,
   writeStoredAiAssistantLastActionPreference,
   getAiDocumentFingerprint,
   getRichTextAiSelectionContext,
@@ -150,22 +149,9 @@ type LocalTiptapEditorSharedProps = {
   onPickImage?: () => Promise<void>;
   onAiRequest?: (requestJson: string) => Promise<void>;
   onAiCancel?: (requestId: string) => Promise<void>;
-  onReady: (startupMs: number) => Promise<void>;
-};
-
-/**
- * Read-only note body that reuses the same TipTap schema / image loading as the
- * editor. Used by the native memo detail chrome (scheme C).
- */
-type LocalTiptapViewerModeProps = LocalTiptapEditorSharedProps & {
-  mode: "viewer";
-  /** Parsed visual diagram IR for the native X6 read-only viewer. */
   visualDiagramJson?: string;
-  /** Hides code affordances when a damaged diagram falls back to Mermaid. */
   visualDiagramNote?: boolean;
-  /** JSON: `{ alt: string; source: string }` for fullscreen image preview. */
   onImagePreview?: (payloadJson: string) => Promise<void>;
-  /** Enter note editing after a deliberate double tap on ordinary body content. */
   onDoublePress?: () => Promise<void>;
 };
 
@@ -646,6 +632,8 @@ const scrollEditorPositionIntoView = (
 
 function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
   const isViewer = props.mode === "viewer";
+  const isViewerRef = useRef(isViewer);
+  isViewerRef.current = isViewer;
   const visualDiagram = useMemo(() => {
     if (props.mode !== "viewer" || !props.visualDiagramJson) return null;
     try {
@@ -759,12 +747,8 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
   );
   const diagramViewer = isViewer && Boolean(props.mode === "viewer" && props.visualDiagramNote);
   const mermaidCodeBlockExtension = useMemo(
-    () => createMobileCodeBlockExtension(
-      props.locale,
-      props.theme,
-      props.mode === "viewer" && Boolean(props.visualDiagramNote),
-    ),
-    [props.locale, props.mode, props.theme, props.mode === "viewer" ? props.visualDiagramNote : undefined]
+    () => createMobileCodeBlockExtension(props.locale, props.theme, diagramViewer),
+    [diagramViewer, props.locale, props.theme]
   );
   const searchHighlightExtension = useMemo(
     () => Extension.create({
@@ -802,11 +786,9 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
         table: { renderWrapper: true },
       }),
       ...createNativeUnsupportedContentExtensions(),
-      ...(isViewer
-        ? []
-        : [Placeholder.configure({
-            placeholder: getMobileEditorPlaceholder(props.locale),
-          })]),
+      Placeholder.configure({
+        placeholder: () => isViewerRef.current ? "" : getMobileEditorPlaceholder(props.locale),
+      }),
     ],
     content: prepareNativeEditorContent(
       resolveImageSources(resolveMobileAttachmentContent(props.content), props.baseUrl),
@@ -820,7 +802,7 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
         // Intercept attachment anchors before ProseMirror's later click phase so
         // the embedded file:// WebView never follows relative resource URLs.
         click: (_view, event) => handleMobileResourceEvent(event, onResourcePressRef.current, {
-          allowImagePreview: isViewer,
+          allowImagePreview: isViewerRef.current,
           onImagePreview: onImagePreviewRef.current,
         }),
         contextmenu: (_view, event) => handleMobileResourceEvent(event, onResourcePressRef.current, {
@@ -828,7 +810,7 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
           onImagePreview: onImagePreviewRef.current,
         }),
         dblclick: (_view, event) => {
-          if (!isViewer || !onDoublePressRef.current) return false;
+          if (!isViewerRef.current || !onDoublePressRef.current) return false;
           const target = event.target as HTMLElement | null;
           if (!target || target.closest("a, button, img, input, textarea, select, .edgeever-image-node")) {
             return false;
@@ -1088,8 +1070,8 @@ function LocalTiptapEditorImpl(props: LocalTiptapEditorProps) {
       content: editor.state.doc.slice(from, to).content.toJSON(),
     } as EditorDoc, props.baseUrl)).trim();
     if (!markdown) return false;
-    const resolved = resolveAiAssistantLastAction({
-      fallbackAction: getDefaultAiAction(!wholeNote),
+    const resolved = resolveAiAssistantOpenAction({
+      hasSelection: !wholeNote,
       preference: readStoredAiAssistantLastActionPreference(wholeNote ? "wholeNote" : "selected"),
       prompts: aiPrompts,
     });
@@ -1757,16 +1739,16 @@ const MobileSelectionAiPanel = ({
   const english = locale === "en-US";
   const [picker, setPicker] = useState<MobileAiPickerKind | null>(null);
   const actionLabels: Record<AiAction, string> = {
-    summarize: english ? "Summarize" : "总结",
+    summarize: english ? "Summarize" : "精简总结",
     "extract-key-points": english ? "Key points" : "提炼要点",
     "extract-todos": english ? "Extract tasks" : "提取待办",
-    "rewrite-proofread": english ? "Convert to Xiaohongshu style" : "转为小红书风格",
-    translate: english ? "Translate" : "翻译",
-    "improve-writing": english ? "Improve writing" : "改进写作",
+    "rewrite-proofread": english ? "Rewrite & proofread" : "改写与校对",
+    translate: english ? "Translate" : "全文翻译",
+    "improve-writing": english ? "Polish" : "润色表达",
     "fix-spelling-grammar": english ? "Fix spelling & grammar" : "修正拼写与语法",
     "make-shorter": english ? "Make concise" : "精炼表达",
     "make-longer": english ? "Make longer" : "扩写内容",
-    "simplify-language": english ? "Convert to X (Twitter) style" : "转为推特风格",
+    "simplify-language": english ? "Simplify language" : "简化表达",
     "change-tone": english ? "Change tone" : "调整语气",
     "continue-writing": english ? "Continue writing" : "继续写作",
     custom: english ? "Custom prompt" : "自定义指令",

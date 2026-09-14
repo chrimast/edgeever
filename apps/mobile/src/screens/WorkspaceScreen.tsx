@@ -105,7 +105,7 @@ import {
   TagPickerModal,
 } from "./WorkspacePickers";
 import { RevisionHistoryModal } from "./WorkspaceRevisionHistory";
-import { CreateMemoModal, RichEditorModal } from "./WorkspaceEditors";
+import { CreateMemoModal } from "./WorkspaceEditors";
 import {
   NotesActionsModal,
   SelectionActionBar,
@@ -463,7 +463,7 @@ export const WorkspaceScreen = ({
     return pending;
   }, []);
 
-  const openRichEditor = useCallback(async (memo: MemoDetail, initialFocus: "body" | "title" = "body") => {
+  const openRichEditor = useCallback((memo: MemoDetail, initialFocus: "body" | "title" = "body") => {
     if (hasDiagramDocumentMarker(memo.contentMarkdown)) {
       Alert.alert(
         resolvedLocale === "en-US" ? "View-only diagram" : "图表暂为只读",
@@ -473,28 +473,19 @@ export const WorkspaceScreen = ({
       );
       return;
     }
-    // Unmount detail DomWebView before the editable instance mounts (Android IME).
+    // Keep the detail DomWebView mounted and switch it in place. Remounting the
+    // editor costs ~1s, and waiting on a network refresh made tap-to-edit feel like 2-3s.
     beginEditorStartup();
-    let editingMemo = memo;
-    const queuedItem = (await listMobileSyncQueueItems(syncQueueScope)).find((item) => item.memoId === memo.id);
-
-    if (!queuedItem && client && !memo.id.startsWith("local:")) {
-      try {
-        const response = await client.getMemo(memo.id);
-        editingMemo = response.memo;
-        await upsertLocalMemo(dataScope, editingMemo);
-        queryClient.setQueryData(["mobile", "memo", "notebook", editingMemo.id], { memo: editingMemo });
-        queryClient.setQueryData(["mobile", "memo", "trash", editingMemo.id], { memo: editingMemo });
-      } catch {
-        // The local mirror remains editable while offline.
-      }
+    const open = (draft: MobileMemoDraft | null) => {
+      memoDraftPrefetchRef.current.delete(memo.id);
+      setRichEditingSession({ draft, initialFocus, memo });
+    };
+    if (memoDraftValueRef.current.has(memo.id)) {
+      open(memoDraftValueRef.current.get(memo.id) ?? null);
+      return;
     }
-
-    const draft = await loadMemoDraft(editingMemo.id);
-    memoDraftPrefetchRef.current.delete(memo.id);
-    setSelectedMemoId(null);
-    setRichEditingSession({ draft, initialFocus, memo: editingMemo });
-  }, [client, dataScope, loadMemoDraft, queryClient, resolvedLocale, syncQueueScope]);
+    void loadMemoDraft(memo.id).then(open);
+  }, [loadMemoDraft, resolvedLocale]);
 
   const memos = useMemo(() => memosQuery.data?.pages.flatMap((page) => page.memos) ?? [], [memosQuery.data]);
   const searchResults = useMemo(() => searchQuery.data?.pages.flatMap((page) => page.memos) ?? [], [searchQuery.data]);
@@ -1175,20 +1166,7 @@ export const WorkspaceScreen = ({
     ]);
   };
 
-  if (richEditingSession) {
-    return <RichEditorModal
-      baseUrl={session?.baseUrl ?? ""}
-      initialDraft={richEditingSession.draft}
-      initialFocus={richEditingSession.initialFocus}
-      imageCompressionEnabled={imageCompressionEnabled}
-      memo={richEditingSession.memo}
-      notebooks={notebooks}
-      onClose={closeRichEditor}
-      updateMutation={localUpdateMemoMutation}
-    />;
-  }
-
-  // Full-tree create (same as rich edit) — never stack DomWebView inside RN Modal over
+  // Full-tree create — never stack a second DomWebView inside an RN Modal over
   // list/detail WebViews; that breaks Android soft-input attachment.
   // Existing-note edits stay on the detail viewer and switch it in place.
   if (createOpen) {
@@ -1305,7 +1283,7 @@ export const WorkspaceScreen = ({
         onCloseEditor={closeRichEditor}
         onDelete={handleDeleteMemo}
         onDeleteResource={handleDeleteResource}
-        onRichEdit={(memo, initialFocus) => void openRichEditor(memo, initialFocus)}
+        onRichEdit={openRichEditor}
         onOpenRevisions={setRevisionMemo}
         onRenameResource={handleRenameResource}
         onAdoptCloudVersion={(memo) => void handleAdoptCloudVersion(memo)}

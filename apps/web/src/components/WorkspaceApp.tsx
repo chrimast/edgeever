@@ -2094,6 +2094,7 @@ export const WorkspaceApp = ({
     : null;
   const selectedMemo = memoQuery.data?.memo ?? cachedSelectedMemo;
   const selectedDiagram = parseDiagramDocument(selectedMemo?.contentMarkdown);
+  const desktopNotebookSidebarCollapsed = Boolean(isDesktop && notebookSidebarCollapsed);
   const desktopFocusModeActive = Boolean(
     isDesktop && desktopFocusMode && rightView === "editor" && selectedMemo && !memoSelectionModeActive
   );
@@ -3292,7 +3293,7 @@ export const WorkspaceApp = ({
           <aside
             id="edgeever-notebook-sidebar"
             className={cn(
-              "edgeever-workspace-sidebar min-h-0 border-r",
+              "edgeever-workspace-sidebar min-h-0 overflow-hidden border-r",
               desktopFocusModeActive
                 ? "hidden"
                 : visibleActivePane === "notebooks"

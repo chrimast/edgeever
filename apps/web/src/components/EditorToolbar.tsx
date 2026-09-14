@@ -35,7 +35,13 @@ import {
 import { CODE_BLOCK_LANGUAGES, getCodeBlockLanguageValue } from "@/lib/code-block";
 import { EditorTableMenu } from "@/components/EditorTableMenu";
 import { wrapIndentedParagraphInList } from "@/lib/editor-shortcuts";
-import { MARKDOWN_THEME_PREFERENCES, useMarkdownTheme } from "@/components/ThemeProvider";
+import {
+  EDITOR_THEME_NAMES,
+  MARKDOWN_THEME_PREFERENCES,
+  localizeStoredCustomThemeName,
+  useEditorTheme,
+  useMarkdownTheme,
+} from "@/components/ThemeProvider";
 
 const EditorToolbarButton = ({
   active = false,
@@ -161,6 +167,8 @@ export const EditorToolbar = ({
 }) => {
   const { t } = useTranslation();
   const { markdownThemePreference, setMarkdownTheme } = useMarkdownTheme();
+  const { editorTheme, setEditorTheme, customEditorThemes } = useEditorTheme();
+  const namedEditorThemes = EDITOR_THEME_NAMES.filter((theme) => theme !== "custom");
   const controlsRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(readEditorToolbarExpandedPreference);
   const [hasOverflow, setHasOverflow] = useState(false);
@@ -406,7 +414,10 @@ export const EditorToolbar = ({
               ))}
               {customEditorThemes.map((theme) => (
                 <SelectItem key={theme.id} value={theme.id}>
-                  {theme.name}
+                  {localizeStoredCustomThemeName(theme.name, {
+                    defaultName: t("settings.customEditorTheme.defaultName"),
+                    newName: (index) => t("settings.customEditorTheme.newName", { n: index }),
+                  })}
                 </SelectItem>
               ))}
             </SelectContent>

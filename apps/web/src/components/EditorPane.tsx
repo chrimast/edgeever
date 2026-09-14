@@ -90,7 +90,7 @@ import {
   type NoteLinkSuggestionLabels,
 } from "./editor/NoteLinkSuggestion";
 import { WeChatIcon } from "./WeChatIcon";
-import { useEditorTheme, useMarkdownTheme } from "./ThemeProvider";
+import { isNamedEditorTheme, useEditorTheme, useMarkdownTheme } from "./ThemeProvider";
 import type { MarkdownSourceEditorRef } from "./editor/MarkdownSourceEditor";
 
 const MarkdownSourceEditor = lazy(() =>
@@ -153,8 +153,10 @@ import {
   getNotebookMoveOptions,
   readDesktopReadingProtectionPreference,
   readEditorOutlineCollapsedPreference,
+  readEditorPhonePreviewPreference,
   writeDesktopReadingProtectionPreference,
   writeEditorOutlineCollapsedPreference,
+  writeEditorPhonePreviewPreference,
   type EditorContentAlignment,
   type MemoDocumentActionRequest,
   type ShortcutSettings,
@@ -162,6 +164,7 @@ import {
 import { copyEditorToWeChat, copyMarkdownToWeChat } from "@/lib/wechat-copy";
 import { isPaperEditorTheme, publishEditorCssVars, resolvePaperEditorTheme } from "@/lib/publish-layout";
 import { ThemeBlock } from "./ThemeBlock";
+import { EditorPhonePreview, PhonePreviewGlyph } from "./EditorPhonePreview";
 import { downloadMarkdownFile } from "@/lib/note-markdown-export";
 import { NOTE_HTML_FULL_STYLES } from "@/lib/note-html-export-assets";
 import { downloadNoteHtmlFile, getHtmlImageEmbedNoticeKind } from "@/lib/note-html-export";
@@ -287,13 +290,6 @@ type AiInsertionTarget = {
   position: number;
 };
 
-const getAttachmentLinkFromEventTarget = (target: EventTarget | null) =>
-  target instanceof Element
-    ? target.closest<HTMLAnchorElement>(
-        'a.edgeever-attachment-link, a[href*="/api/v1/resources/"], a[href^="edgeever-resource://"]'
-      )
-    : null;
-
 const getNoteLinkFromEventTarget = (target: EventTarget | null) =>
   target instanceof Element
     ? target.closest<HTMLAnchorElement>('a.edgeever-note-link, a[href^="#memo="]')
@@ -322,27 +318,6 @@ const getNoteLinkHintPosition = (link: HTMLAnchorElement): NoteLinkHintPosition 
     top: placement === "above" ? rect.top - 8 : rect.bottom + 8,
     placement,
   };
-};
-
-const findAttachmentLinkRange = (
-  editor: Editor,
-  href: string
-): { from: number; to: number; marks: readonly Mark[] } | null => {
-  let from: number | null = null;
-  let to: number | null = null;
-  let marks: readonly Mark[] = [];
-
-  editor.state.doc.descendants((node, pos) => {
-    if (!node.isText || !node.text) return;
-    const linkMark = node.marks.find((mark) => mark.type.name === "link" && mark.attrs.href === href);
-    if (!linkMark) return;
-    from = from === null ? pos : Math.min(from, pos);
-    to = to === null ? pos + node.nodeSize : Math.max(to, pos + node.nodeSize);
-    marks = node.marks;
-  });
-
-  if (from === null || to === null) return null;
-  return { from: from as number, to: to as number, marks };
 };
 
 type MobilePlainTextElement = HTMLTextAreaElement | HTMLDivElement;
@@ -634,6 +609,7 @@ const RichEditorPane = ({
   const [isMarkdownMode, setIsMarkdownMode] = useState(false);
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
   const [editorOutlineCollapsed, setEditorOutlineCollapsed] = useState(readEditorOutlineCollapsedPreference);
+  const [phonePreviewOpen, setPhonePreviewOpen] = useState(readEditorPhonePreviewPreference);
   const [wechatCopyState, setWechatCopyState] = useState<"idle" | "copying" | "copied" | "error">("idle");
   const [memoIdCopyNotice, setMemoIdCopyNotice] = useState<{ status: "copied" | "error"; id: string } | null>(null);
   const handledSaveAndSyncTokenRef = useRef(saveAndSyncToken);
@@ -710,6 +686,11 @@ const RichEditorPane = ({
   const handleEditorOutlineCollapsedChange = useCallback((collapsed: boolean) => {
     setEditorOutlineCollapsed(collapsed);
     writeEditorOutlineCollapsedPreference(collapsed);
+  }, []);
+
+  const handlePhonePreviewChange = useCallback((open: boolean) => {
+    setPhonePreviewOpen(open);
+    writeEditorPhonePreviewPreference(open);
   }, []);
 
   const toggleEditorOutline = useCallback(() => {
@@ -1230,7 +1211,7 @@ const RichEditorPane = ({
     editable: Boolean(memo && !effectiveReadOnly && editorIsHydratedForCurrentMemo),
     editorProps: {
       attributes: {
-        class: "edgeever-note-rich-editor prose prose-slate max-w-none focus:outline-none min-h-[240px] px-4 py-3 sm:px-7 lg:min-h-[180px]",
+        class: "edgeever-note-rich-editor prose prose-slate max-w-none focus:outline-none min-h-[240px] lg:min-h-[180px]",
       },
       handleKeyDown: (view, event) => {
         const { selection } = view.state;
@@ -3927,6 +3908,30 @@ const RichEditorPane = ({
                       </Button>
                     </IconTooltip>
                   )}
+                  {!isMobileViewport && !useMobilePlainTextEditor && !useMarkdownSourceEditor && (
+                    <TooltipProvider delayDuration={0} skipDelayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            className={cn(
+                              "hidden h-8 w-8 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-slate-300 xl:inline-flex",
+                              phonePreviewOpen && "bg-emerald-50 text-emerald-800 hover:bg-emerald-50 hover:text-emerald-900",
+                            )}
+                            size="icon"
+                            variant="ghost"
+                            aria-label={phonePreviewOpen ? t("editor.hidePhonePreview") : t("editor.showPhonePreview")}
+                            aria-pressed={phonePreviewOpen || undefined}
+                            onClick={() => handlePhonePreviewChange(!phonePreviewOpen)}
+                          >
+                            <PhonePreviewGlyph className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          {phonePreviewOpen ? t("editor.hidePhonePreview") : t("editor.showPhonePreview")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <TooltipProvider delayDuration={0} skipDelayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -4180,16 +4185,9 @@ const RichEditorPane = ({
 
       <div
         ref={setEditorScrollContainerRef}
-        data-editor-theme={
-          editorTheme === "default" ||
-          editorTheme === "minimal-emerald" ||
-          editorTheme === "outline-emerald" ||
-          editorTheme === "wechat-green" ||
-          editorTheme === "modern-mint" ||
-          editorTheme === "marxico"
-            ? editorTheme
-            : "custom"
-        }
+        data-editor-theme={isNamedEditorTheme(editorTheme) ? editorTheme : "custom"}
+        data-paper-theme={isPaperEditorTheme(editorTheme) ? "true" : undefined}
+        data-publish-surface={isMobileViewport ? "phone" : "desktop"}
         style={{
           ...(isPaperEditorTheme(editorTheme)
             ? publishEditorCssVars(
@@ -4203,12 +4201,7 @@ const RichEditorPane = ({
                 "--editor-paragraph-spacing": `${MEMO_CONTENT_STYLE.body.paragraphSpacing}px`,
               }),
           "--memo-content-divider-spacing": `${MEMO_CONTENT_STYLE.divider.marginVertical}px`,
-          ...(editorTheme !== "default" &&
-          editorTheme !== "minimal-emerald" &&
-          editorTheme !== "outline-emerald" &&
-          editorTheme !== "wechat-green" &&
-          editorTheme !== "modern-mint" &&
-          editorTheme !== "marxico"
+          ...(!isNamedEditorTheme(editorTheme)
             ? {
                 "--editor-theme-light-bg": customEditorTheme.light.background,
                 "--editor-theme-light-text": customEditorTheme.light.text,
@@ -4239,13 +4232,7 @@ const RichEditorPane = ({
               : "overflow-y-auto"
         )}
       >
-        {editorTheme !== "default" &&
-          editorTheme !== "minimal-emerald" &&
-          editorTheme !== "outline-emerald" &&
-          editorTheme !== "wechat-green" &&
-          editorTheme !== "modern-mint" &&
-          editorTheme !== "marxico" &&
-          customEditorTheme.customCss && (
+        {!isNamedEditorTheme(editorTheme) && customEditorTheme.customCss && (
             <style
               data-theme-custom-css
               data-original-css={customEditorTheme.customCss}
@@ -4262,12 +4249,12 @@ const RichEditorPane = ({
             "flex gap-8 transition-all duration-200",
             useMarkdownSourceEditor
               ? "h-full min-h-0 flex-1 items-stretch px-0 py-0"
-              : "min-h-full items-start px-4 py-2 sm:px-7 lg:px-10",
+              : "min-h-full items-start px-4 py-2",
             desktopFocusMode
               ? "mx-auto w-full max-w-[1400px] justify-center"
               : editorContentAlignment === "center"
                 ? "w-full justify-center"
-                : "w-full justify-start"
+                : "w-full justify-between"
           )}
         >
           <div
@@ -4279,7 +4266,7 @@ const RichEditorPane = ({
                 : "max-w-none"
             )}
             style={
-              !desktopFocusMode && !useMarkdownSourceEditor
+              !desktopFocusMode && !useMarkdownSourceEditor && editorContentAlignment === "center"
                 ? {
                     maxWidth: editorOutlineCollapsed
                       ? EDITOR_CONTENT_MAX_WIDTH_COLLAPSED

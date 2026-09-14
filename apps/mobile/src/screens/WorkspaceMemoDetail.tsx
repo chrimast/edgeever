@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { DEFAULT_MEMO_TITLE, parseDiagramDocument, type MemoDetail, type TiptapDoc } from "@edgeever/shared";
+import { DEFAULT_MEMO_TITLE, parseDiagramDocument, type MemoDetail, type Notebook, type TiptapDoc } from "@edgeever/shared";
 import {
   type NoteImageTheme,
   type NoteImageFontStyle,
@@ -7,7 +7,7 @@ import {
   type NoteImageCardWidth,
 } from "@edgeever/shared/note-image-card";
 import * as Clipboard from "expo-clipboard";
-import { Image as RNImage, Platform, ScrollView, StyleSheet, Text as RNText, View, type ImageStyle, type StyleProp, type TextStyle } from "react-native";
+import { Image as RNImage, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text as RNText, View, type ImageStyle, type StyleProp, type TextStyle } from "react-native";
 import { Modal } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
@@ -41,7 +41,7 @@ import { useMobileTheme } from "../lib/mobile-theme";
 import { useSession } from "../lib/session";
 import { beginEditorStartup } from "../lib/startup-performance";
 import type { MobileSyncQueueItem } from "../lib/sync-queue";
-import { formatMemoDetailDate, getTextSearchMatches } from "./workspace-utils";
+import { formatMemoDetailDate, getTextSearchMatches, parseTags } from "./workspace-utils";
 import { styles } from "./workspace-styles";
 import { NotebookPickerModal, SmartTagButton, TagPickerModal } from "./WorkspacePickers";
 
@@ -527,6 +527,32 @@ export const MemoDetailModal = ({
     const diagram = memo ? parseDiagramDocument(memo.contentMarkdown) : null;
     return diagram ? JSON.stringify(diagram) : undefined;
   }, [memo]);
+  const isEditing = Boolean(editingSession);
+  const noteBodyDom = useMemo(() => ({
+    ...SAFE_DOM_WEBVIEW_PROPS,
+    bounces: true,
+    contentInsetAdjustmentBehavior: "never" as const,
+    overScrollMode: "never" as const,
+    scrollEnabled: false,
+    style: [
+      detailLayoutStyles.viewer,
+      resolvedTheme === "dark" ? detailLayoutStyles.viewerDark : null,
+    ],
+  }), [resolvedTheme]);
+  const editor = useMobileRichEditor({
+    active: isEditing,
+    alreadyReady: viewerReady,
+    baseUrl,
+    editorRef: viewerRef,
+    handleHardwareBack: false,
+    imageCompressionEnabled,
+    initialDraft: editingSession?.draft ?? null,
+    initialFocus: editingSession?.initialFocus ?? "body",
+    memo: editingSession?.memo ?? memo,
+    notebooks,
+    onClose: onCloseEditor,
+    updateMutation,
+  });
 
   const downloadResource = useCallback(async (target: MobileResourceTarget) => {
     if (!client) throw new Error(resolvedLocale === "en-US" ? "The resource client is unavailable." : "当前无法读取资源。");
@@ -1170,14 +1196,18 @@ export const MemoDetailModal = ({
                 content={viewerContent}
                 dom={noteBodyDom}
                 locale={resolvedLocale}
-                mode="viewer"
-                onImagePreview={onImagePreview}
-                onDoublePress={isVisualDiagram ? undefined : async () => {
+                mode={isEditing ? "editor" : "viewer"}
+                onAiCancel={isEditing ? editor.cancelSelectionAi : undefined}
+                onAiRequest={isEditing ? editor.requestSelectionAi : undefined}
+                onChange={isEditing ? editor.persistDraft : undefined}
+                onImagePreview={isEditing ? undefined : onImagePreview}
+                onDoublePress={isEditing || isVisualDiagram ? undefined : async () => {
                   beginEditorStartup();
                   onRichEdit(memo, "body");
                 }}
                 onImageExportEvent={handleImageExportEvent}
-                onLoadResource={loadViewerResource}
+                onLoadResource={isEditing ? editor.loadEditorResource : loadViewerResource}
+                onPickImage={isEditing ? editor.pickAndUploadImage : undefined}
                 onReady={async () => {
                   setViewerReady(true);
                 }}
@@ -1189,8 +1219,8 @@ export const MemoDetailModal = ({
                 }}
                 ref={viewerRef}
                 theme={resolvedTheme}
-                visualDiagramJson={visualDiagramJson}
-                visualDiagramNote={isVisualDiagram}
+                visualDiagramJson={isEditing ? undefined : visualDiagramJson}
+                visualDiagramNote={!isEditing && isVisualDiagram}
               />
             ) : (
               <View style={styles.centerState}>
@@ -1208,7 +1238,7 @@ export const MemoDetailModal = ({
             <Text style={styles.errorText}>笔记加载失败</Text>
           </View>
         )}
-        {memo && !memo.isDeleted && !isVisualDiagram ? (
+        {memo && !memo.isDeleted && !isVisualDiagram && !isEditing ? (
           <Pressable
             accessibilityLabel="编辑笔记"
             accessibilityRole="button"

@@ -34,9 +34,7 @@ const WECHAT_STYLES: Record<string, string> = {
 
 const applyLegacyWeChatStyles = (
   root: HTMLElement,
-  editorTheme?: string,
   customColors?: { bg: string; text: string; accent: string; soft: string; codeBackground: string; border: string } | null,
-  customCss?: string
 ) => {
   const textColor = customColors ? customColors.text : "#333";
   const bgColors = customColors ? customColors.bg : "#ffffff";
@@ -210,16 +208,98 @@ const getSvgSize = (svg: string) => {
   };
 };
 
-const svgToPng = async (svg: string) => {
-  const size = getSvgSize(svg);
-  const objectUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+const WECHAT_MERMAID_MAX_EDGE = 1280;
+
+const prepareSvgMarkup = (svg: string) => {
+  const markup = svg.trim();
+  if (/<svg\b[^>]*\sxmlns=/.test(markup)) return markup;
+  return markup.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
+};
+
+const canvasToJpeg = (canvas: HTMLCanvasElement, quality = 0.86) =>
+  new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (jpeg) => {
+        if (jpeg) {
+          resolve(jpeg);
+          return;
+        }
+        reject(new Error("Could not convert image to JPEG"));
+      },
+      "image/jpeg",
+      quality,
+    );
+  });
+
+const svgToTransparentPng = async (svg: string) => {
+  const objectUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
   try {
     const image = new Image();
     image.src = objectUrl;
     await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, image.naturalWidth);
+    canvas.height = Math.max(1, image.naturalHeight);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Could not create ornament canvas");
+    context.drawImage(image, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((png) => {
+        if (png) {
+          resolve(png);
+          return;
+        }
+        reject(new Error("Could not convert ornament to PNG"));
+      }, "image/png");
+    });
+    return blobToDataUrl(blob);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+};
+
+const rasterizePublishOrnamentsForWeChat = async (root: HTMLElement) => {
+  const images = Array.from(root.querySelectorAll<HTMLImageElement>("img[data-ee-publish-ornament]"));
+  await Promise.all(images.map(async (image) => {
+    const source = image.getAttribute("src")?.trim() ?? "";
+    if (!source.startsWith("data:image/svg+xml")) return;
+    try {
+      const encoded = source.replace(/^data:image\/svg\+xml(?:;charset=utf-8)?,/, "");
+      const svg = decodeURIComponent(encoded);
+      image.setAttribute("src", await svgToTransparentPng(svg));
+    } catch {
+      // Keep the SVG data URI in the live preview; WeChat copy can drop a broken ornament.
+    }
+  }));
+};
+
+const svgToWeChatImage = async (svg: string) => {
+  const markup = prepareSvgMarkup(svg);
+  const size = getSvgSize(markup);
+  const objectUrl = URL.createObjectURL(new Blob([markup], { type: "image/svg+xml;charset=utf-8" }));
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    const naturalWidth = image.naturalWidth || size.width;
+    const naturalHeight = image.naturalHeight || size.height;
+    const scale = Math.min(2, WECHAT_MERMAID_MAX_EDGE / Math.max(naturalWidth, naturalHeight, 1));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Could not create image canvas");
+    }
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const displayWidth = Math.min(size.width || naturalWidth, 677);
+    const displayHeight = displayWidth * (naturalHeight / Math.max(naturalWidth, 1));
     return {
-      blob: await rasterizeImageElement(image, 2),
-      ...size,
+      blob: await canvasToJpeg(canvas),
+      width: displayWidth,
+      height: displayHeight,
     };
   } finally {
     URL.revokeObjectURL(objectUrl);
@@ -254,16 +334,25 @@ const embedMermaidForWeChat = async (root: HTMLElement, editor?: Editor) => {
     }
 
     try {
-      const renderedSvg = renderedBlocks[index]?.querySelector("svg")?.outerHTML;
-      const svg = renderedSvg || await renderMermaidSvg(source);
+      let svg = "";
+      try {
+        svg = await renderMermaidSvg(source);
+      } catch {
+        svg = renderedBlocks[index]?.querySelector("svg")?.outerHTML || "";
+      }
+      if (!svg) return;
+
+      const { blob, width, height } = await svgToWeChatImage(svg);
+      const paragraph = document.createElement("p");
+      paragraph.style.cssText = "text-align: center; margin: 1em 0;";
       const image = document.createElement("img");
-      const { blob, width, height } = await svgToPng(svg);
       image.src = await blobToDataUrl(blob);
       image.width = Math.round(width);
       image.height = Math.round(height);
       image.alt = "Mermaid diagram";
-      image.style.cssText = "display: block; width: auto; max-width: 100%; height: auto; max-height: 30rem; object-fit: contain; margin: 1em auto;";
-      pre.replaceWith(image);
+      image.style.cssText = "display: inline-block; max-width: 100%; height: auto;";
+      paragraph.appendChild(image);
+      pre.replaceWith(paragraph);
     } catch {
       // Preserve the Mermaid source as a readable fallback when rendering fails.
     }
@@ -278,16 +367,31 @@ const isSameOrigin = (source: string) => {
   }
 };
 
+const isContentImage = (image: HTMLImageElement) =>
+  Boolean(image.getAttribute("src")?.trim()) && !image.classList.contains("ProseMirror-separator");
+
+const findOriginalImage = (source: string, originals: HTMLImageElement[]) => {
+  const match = originals.find((image) => image.getAttribute("src") === source || image.currentSrc === source);
+  if (match) return match;
+  try {
+    const resolved = new URL(source, window.location.href).href;
+    return originals.find((image) => image.src === resolved) ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const embedImagesForWeChat = async (root: HTMLElement, originalImages: HTMLImageElement[] = []) => {
-  const images = Array.from(root.querySelectorAll<HTMLImageElement>("img"));
-  await Promise.all(images.map(async (image, index) => {
+  const images = Array.from(root.querySelectorAll<HTMLImageElement>("img")).filter(isContentImage);
+  const originals = originalImages.filter(isContentImage);
+  await Promise.all(images.map(async (image) => {
     const source = image.getAttribute("src")?.trim();
     if (!source || source.startsWith("data:")) {
       return;
     }
 
     try {
-      const originalImage = originalImages[index];
+      const originalImage = findOriginalImage(source, originals);
       if (originalImage) {
         image.setAttribute("src", await blobToDataUrl(await rasterizeImageElement(originalImage)));
         image.removeAttribute("srcset");
@@ -300,12 +404,12 @@ const embedImagesForWeChat = async (root: HTMLElement, originalImages: HTMLImage
       }
       image.setAttribute("src", await blobToDataUrl(await convertImageToPng(await response.blob())));
       image.removeAttribute("srcset");
-    } catch (error) {
+    } catch {
       // Never put a private same-origin URL into the clipboard: WeChat cannot access it.
       if (isSameOrigin(source)) {
-        throw error;
+        image.removeAttribute("src");
+        image.removeAttribute("srcset");
       }
-      // External images may still be reachable by the WeChat editor.
     }
   }));
 };
@@ -345,13 +449,10 @@ const convertImageGalleriesForWeChat = (root: HTMLElement) => {
   });
 };
 
-export const buildWeChatClipboardHtml = async (editor: Editor) => {
-  const container = document.createElement("div");
-  container.innerHTML = editor.getHTML();
-  
-  const closestContainer = editor.view.dom.closest<HTMLElement>("[data-editor-theme]");
+export const readEditorCopyContext = (from?: HTMLElement | null) => {
+  const closestContainer = from?.closest<HTMLElement>("[data-editor-theme]")
+    ?? document.querySelector<HTMLElement>("[data-editor-theme]");
   const editorTheme = closestContainer?.dataset.editorTheme;
-  
   let customColors: { bg: string; text: string; accent: string; soft: string; codeBackground: string; border: string } | null = null;
   if (closestContainer && editorTheme === "custom") {
     const colors = getComputedStyle(closestContainer);
@@ -364,15 +465,38 @@ export const buildWeChatClipboardHtml = async (editor: Editor) => {
       border: colors.getPropertyValue("--editor-theme-border") || "#a7f3d0",
     };
   }
-
   const customStyleTag = closestContainer?.querySelector<HTMLStyleElement>("style[data-theme-custom-css]");
-  const customCss = customStyleTag?.dataset.originalCss || "";
+  return {
+    editorTheme,
+    customColors,
+    customCss: customStyleTag?.dataset.originalCss || "",
+  };
+};
 
-  applyInlineStyles(container, editorTheme, customColors, customCss);
-  convertImageGalleriesForWeChat(container);
+export const preparePublishArticle = (
+  html: string,
+  from?: HTMLElement | null,
+  editorThemeOverride?: string,
+) => {
+  const root = document.createElement("div");
+  root.innerHTML = html;
+  const context = readEditorCopyContext(from);
+  applyInlineStyles(
+    root,
+    editorThemeOverride ?? context.editorTheme,
+    context.customColors,
+    context.customCss,
+  );
+  convertImageGalleriesForWeChat(root);
+  return root;
+};
+
+export const buildWeChatClipboardHtml = async (editor: Editor) => {
+  const container = preparePublishArticle(editor.getHTML(), editor.view.dom);
   await embedMermaidForWeChat(container, editor);
-  const originalImages = Array.from(editor.view.dom.querySelectorAll<HTMLImageElement>("img"));
+  const originalImages = Array.from(editor.view.dom.querySelectorAll<HTMLImageElement>("img")).filter(isContentImage);
   await embedImagesForWeChat(container, originalImages);
+  await rasterizePublishOrnamentsForWeChat(container);
   return container.outerHTML;
 };
 
@@ -380,30 +504,11 @@ export const copyEditorToWeChat = async (editor: Editor) =>
   copyHtmlToClipboard(await buildWeChatClipboardHtml(editor), editor.getText({ blockSeparator: "\n" }));
 
 export const copyMarkdownToWeChat = async (markdown: string) => {
-  const container = document.createElement("div");
-  container.innerHTML = marked.parse(markdown, { async: false, gfm: true, breaks: false });
-  
-  const closestContainer = document.querySelector<HTMLElement>("[data-editor-theme]");
-  const editorTheme = closestContainer?.dataset.editorTheme;
-  
-  let customColors: { bg: string; text: string; accent: string; soft: string; codeBackground: string; border: string } | null = null;
-  if (closestContainer && editorTheme === "custom") {
-    const colors = getComputedStyle(closestContainer);
-    customColors = {
-      bg: colors.getPropertyValue("--editor-theme-bg") || "#ffffff",
-      text: colors.getPropertyValue("--editor-theme-text") || "#1f2937",
-      accent: colors.getPropertyValue("--editor-theme-accent") || "#059669",
-      soft: colors.getPropertyValue("--editor-theme-soft") || "#ecfdf5",
-      codeBackground: colors.getPropertyValue("--editor-theme-code-bg") || "#e0ece9",
-      border: colors.getPropertyValue("--editor-theme-border") || "#a7f3d0",
-    };
-  }
-
-  const customStyleTag = closestContainer?.querySelector<HTMLStyleElement>("style[data-theme-custom-css]");
-  const customCss = customStyleTag?.dataset.originalCss || "";
-
-  applyInlineStyles(container, editorTheme, customColors, customCss);
+  const container = preparePublishArticle(
+    marked.parse(markdown, { async: false, gfm: true, breaks: false }),
+  );
   await embedMermaidForWeChat(container);
   await embedImagesForWeChat(container);
+  await rasterizePublishOrnamentsForWeChat(container);
   await copyHtmlToClipboard(container.outerHTML, container.textContent ?? "");
 };
