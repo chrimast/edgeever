@@ -3,9 +3,10 @@ import type {
   AiPromptParameterKind,
   AiPromptResultMode,
 } from "./ai-assistant";
+import { resolveSupportedLocale } from "./i18n/locales";
 
 export type AiPromptSeedKey = Exclude<AiAction, "custom">;
-export type AiPromptSeedLocale = "zh-CN" | "en-US";
+export type AiPromptSeedLocale = "zh-CN" | "en-US" | "ja";
 
 export type AiPromptSeedTranslation = {
   name: string;
@@ -26,14 +27,15 @@ const seed = (
   metadata: Omit<AiPromptSeed, keyof AiPromptSeedTranslation | "translations">,
   zhCN: AiPromptSeedTranslation,
   enUS: AiPromptSeedTranslation,
+  ja: AiPromptSeedTranslation,
 ): AiPromptSeed => ({
   ...metadata,
   ...zhCN,
-  translations: { "zh-CN": zhCN, "en-US": enUS },
+  translations: { "zh-CN": zhCN, "en-US": enUS, ja },
 });
 
 export const normalizeAiPromptSeedLocale = (locale: string | null | undefined): AiPromptSeedLocale =>
-  locale?.toLowerCase().startsWith("en") ? "en-US" : "zh-CN";
+  resolveSupportedLocale(locale);
 
 export const localizeAiPromptSeed = (
   promptSeed: AiPromptSeed,
@@ -83,6 +85,18 @@ export const DEFAULT_AI_PROMPT_SEEDS: readonly AiPromptSeed[] = [
         "Preserve the note's language and return only the summary in Markdown.",
       ].join(""),
     },
+    {
+      name: "要約する",
+      description: "テーマ、結論、実行できる結果に圧縮する",
+      instruction: [
+        "ノートを本当に要約してください。逐語の言い換え、行ごとの書き換え、エコーのような再述はしないでください。",
+        "中心テーマ、主要な主張、重要な結論、実行できる結果を抜き出してください。",
+        "繰り返し、修辞、例示、引用、枝葉の詳細は、重要な結論を理解するのに必要でない限り省いてください。",
+        "長いノートは原文のおよそ 20–30% を目安に、3–7 個の簡潔な Markdown 箇条書きにしてください。短いノートは 1–3 文で構いません。",
+        "長い原文をそのまま写したり、原文にない事実を足したりしないでください。",
+        "ノートの言語を保ち、Markdown の要約だけを返してください。",
+      ].join(""),
+    },
   ),
   seed(
     { key: "translate", action: "translate", parameterKind: "target-language", resultMode: "both" },
@@ -96,6 +110,11 @@ export const DEFAULT_AI_PROMPT_SEEDS: readonly AiPromptSeed[] = [
       description: "Translate into a selected language while preserving formatting",
       instruction: "Translate the complete note into the target language specified by the user. Preserve its meaning, Markdown structure, links, and code blocks. Return only the translated note without commentary.",
     },
+    {
+      name: "翻訳する",
+      description: "指定した言語へ翻訳し、構造と書式を残す",
+      instruction: "ノート全体を、ユーザーが指定した目標言語へ翻訳してください。意味、Markdown の構造、リンク、コードブロックは残してください。解説は付けず、訳文だけを返してください。",
+    },
   ),
   seed(
     { key: "improve-writing", action: "improve-writing", parameterKind: "none", resultMode: "both" },
@@ -108,6 +127,11 @@ export const DEFAULT_AI_PROMPT_SEEDS: readonly AiPromptSeed[] = [
       name: "Polish",
       description: "Correct the language and improve clarity and flow",
       instruction: "Polish the content by correcting spelling, grammar, and punctuation and improving word choice, sentence structure, clarity, and flow. Do not change its meaning or deliberately shorten it. Preserve its language and useful Markdown formatting. Return only the polished content.",
+    },
+    {
+      name: "文章を整える",
+      description: "誤字と文法を直し、わかりやすさと流れを上げる",
+      instruction: "内容を整えてください。誤字、文法、句読点を直し、語彙、文の形、明瞭さ、流れを改善します。意味を変えたり、意図的に短くしたりしないでください。元の言語と有用な Markdown 書式は残してください。整えた本文だけを返してください。",
     },
   ),
   seed(
