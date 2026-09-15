@@ -146,6 +146,11 @@ export const DEFAULT_AI_PROMPT_SEEDS: readonly AiPromptSeed[] = [
       description: "Remove repetition and make the writing concise and direct",
       instruction: "Refine the content by removing repetition, filler, and unnecessary modifiers and by combining sentences where useful. Make it concise, clear, and direct while preserving every key fact, claim, and the original meaning. Do not add new information. Preserve its language and useful Markdown formatting. Return only the refined content.",
     },
+    {
+      name: "簡潔にする",
+      description: "重複と冗長さを削り、短くはっきり書く",
+      instruction: "内容を簡潔にしてください。繰り返し、空疎な言い回し、不要な修飾を削り、まとめられる文はまとめて、短く、はっきり、力強くしてください。重要な事実、主張、元の意味はすべて残し、新しい情報は足さないでください。元の言語と有用な Markdown 書式は残してください。簡潔にした本文だけを返してください。",
+    },
   ),
   seed(
     { key: "extract-todos", action: "extract-todos", parameterKind: "none", resultMode: "append" },
@@ -159,6 +164,11 @@ export const DEFAULT_AI_PROMPT_SEEDS: readonly AiPromptSeed[] = [
       description: "Identify actionable work and produce a task list",
       instruction: "Extract explicit or implied actionable tasks from the note as a Markdown task list using '- [ ]'. Preserve its language and do not invent tasks. If there are no actionable tasks, say so briefly in the note's language.",
     },
+    {
+      name: "タスクを抜き出す",
+      description: "実行できる作業を見つけ、チェックリストにする",
+      instruction: "ノートから明示または含意された実行可能なタスクを抜き出し、Markdown のタスクリスト（- [ ]）で出力してください。ノートの言語を保ち、タスクを捏造しないでください。実行できることがなければ、ノートの言語で短くそう書いてください。",
+    },
   ),
   seed(
     { key: "continue-writing", action: "continue-writing", parameterKind: "none", resultMode: "append" },
@@ -171,6 +181,11 @@ export const DEFAULT_AI_PROMPT_SEEDS: readonly AiPromptSeed[] = [
       name: "Continue writing",
       description: "Continue naturally from the end of the note",
       instruction: "Continue writing naturally from where the note ends. Return only the new continuation, not the original content. Preserve its language and Markdown style.",
+    },
+    {
+      name: "続きを書く",
+      description: "ノートの末尾から自然に書き継ぐ",
+      instruction: "ノートの終わりから自然に書き継いでください。原文は繰り返さず、新しい続きだけを返してください。元の言語と Markdown の調子を保ってください。",
     },
   ),
 ];
