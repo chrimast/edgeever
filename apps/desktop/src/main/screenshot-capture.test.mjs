@@ -77,7 +77,19 @@ describe("screenshot capture helpers", () => {
     const encoded = { type: "Buffer", data: [137, 80, 78, 71] };
     expect(new Uint8Array(encoded).byteLength).toBe(0);
     expect(Array.from(normalizeIpcBytes(encoded))).toEqual([137, 80, 78, 71]);
+    expect(screenshotImportIpcPayload({
+      captureId: "shot-1",
+      name: "screenshot.png",
+      type: "image/png",
+      title: "截图",
+      bytes: Buffer.from([1, 2, 3]),
+    })).toMatchObject({
+      captureId: "shot-1",
+      name: "screenshot.png",
+      title: "截图",
+    });
     expect(Array.from(screenshotImportIpcPayload({
+      captureId: "shot-1",
       name: "screenshot.png",
       type: "image/png",
       title: "截图",

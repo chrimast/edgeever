@@ -521,6 +521,7 @@ const flushPendingMarkdownImport = () => {
 const sendScreenshotImport = (payload) => {
   const ipcPayload = screenshotImportIpcPayload(payload);
   if (!ipcPayload.bytes.byteLength) return;
+  if (ipcPayload.captureId && sentScreenshotCaptureIds.has(ipcPayload.captureId)) return;
   if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isLoading() || !rendererReady) {
     pendingScreenshotImport = ipcPayload;
     return;
@@ -534,6 +535,8 @@ const flushPendingScreenshotImport = () => {
   const payload = pendingScreenshotImport;
   pendingScreenshotImport = null;
   if (!payload.bytes?.byteLength) return;
+  if (payload.captureId && sentScreenshotCaptureIds.has(payload.captureId)) return;
+  if (payload.captureId) sentScreenshotCaptureIds.add(payload.captureId);
   mainWindow.webContents.send("desktop:import-screenshot", payload);
 };
 

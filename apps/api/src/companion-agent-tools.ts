@@ -81,25 +81,52 @@ export function createCompanionTools(args: { db: DatabaseAdapter; scope: Compani
           // The original full result remains in this run's model messages. Only
           // reuse it after authorization/context/cursor checks, never across runs.
           return { id: parameters_.memoId, revision: inspected.get(String(parameters_.memoId)), alreadyRead: true,
-            message: "Use the complete get_memo result already returned in this run." };
+            message: "Use the complete result already returned in this run." };
         }
         if (definition.name === "search_memos") parameters_.limit = Math.min(Number(parameters_.limit ?? 8), 8);
         if (definition.name === "list_memos") {
           parameters_.limit = Math.min(Number(parameters_.limit ?? 20), 20);
           parameters_.includeContent = false;
         }
+        if (definition.name === "list_memos") {
+          parameters_.limit = Math.min(Number(parameters_.limit ?? 20), 20);
+          parameters_.includeContent = false;
+        }
+        if (definition.name === "get_diagram") parameters_.includeLayout = false;
         const result = await executeWorkspaceTool(args.context!, args.context!.get("auth"), definition.name, parameters_);
         if (autoApply && parameters_.dryRun !== true) {
           cursor = await companionWorkspaceCursor(args.db, args.scope.workspaceId);
           return { applied: true, ...(typeof result === "object" && result ? result as object : { result }) };
         }
         if (current !== await companionWorkspaceCursor(args.db, args.scope.workspaceId)) return { error: "Notes changed during this read. Start a fresh request." };
+        if (definition.name === "get_diagram") {
+          const payload = result as { memo: { id: string; title: string | null; revision: number }; diagram: { kind?: string; nodes?: unknown[] } };
+          inspected.set(payload.memo.id, payload.memo.revision);
+          const known = args.sources.find(source => source.id === payload.memo.id);
+          remember({
+            id: payload.memo.id,
+            title: payload.memo.title,
+            revision: payload.memo.revision,
+            notebookId: known?.notebookId || "",
+          });
+          return payload;
+        }
         if (definition.name === "get_memo") {
-          const memo = (result as { memo: MemoDetail }).memo;
-          const content = takeNoteText(memo.contentMarkdown, 8000);
+          const payload = result as { memo: MemoDetail; diagram?: { kind?: string } };
+          const memo = payload.memo;
           remember(memo);
+          if (payload.diagram) {
+            inspected.set(memo.id, memo.revision);
+            return {
+              id: memo.id, title: memo.title, notebookId: memo.notebookId, tags: memo.tags, revision: memo.revision,
+              createdAt: memo.createdAt, updatedAt: memo.updatedAt, diagramKind: payload.diagram.kind, diagram: payload.diagram,
+              message: "This is an editable diagram. Change it with update_diagram, not update_memo.",
+            };
+          }
+          const content = takeNoteText(memo.contentMarkdown, 8000);
           if (content.length === memo.contentMarkdown.length) inspected.set(memo.id, memo.revision); else inspected.delete(memo.id);
           return { id: memo.id, title: memo.title, notebookId: memo.notebookId, tags: memo.tags, revision: memo.revision,
+            createdAt: memo.createdAt, updatedAt: memo.updatedAt,
             content, truncated: content.length !== memo.contentMarkdown.length };
         }
         if (definition.name === "search_memos" || definition.name === "list_memos") return {

@@ -30,7 +30,11 @@ export const normalizeIpcBytes = (value) => {
   return new Uint8Array();
 };
 
+export const screenshotCaptureId = (date = new Date()) =>
+  `shot-${date.getTime()}-${Math.random().toString(16).slice(2, 10)}`;
+
 export const screenshotImportIpcPayload = (captured) => ({
+  captureId: captured.captureId,
   name: captured.name,
   type: captured.type,
   title: captured.title,
@@ -168,6 +172,7 @@ export const captureScreenToNote = async (input) => {
   if (!bytes || bytes.byteLength === 0) return null;
   const capturedAt = input.now ? new Date(input.now) : new Date();
   return {
+    captureId: screenshotCaptureId(capturedAt),
     bytes: normalizeIpcBytes(bytes),
     name: screenshotFileName(capturedAt),
     type: "image/png",
