@@ -44,7 +44,7 @@ export const screenshotImportIpcPayload = (captured) => ({
 // Full-screen capture finishes in a few hundred milliseconds. macOS/Electron
 // tray menus can deliver the same click twice after that, so keep the capture
 // locked through a short cooldown instead of releasing it in the same tick.
-export const SCREENSHOT_CAPTURE_COOLDOWN_MS = 2000;
+export const SCREENSHOT_CAPTURE_COOLDOWN_MS = 4000;
 
 export const createScreenshotCaptureGuard = ({
   cooldownMs = SCREENSHOT_CAPTURE_COOLDOWN_MS,

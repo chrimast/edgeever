@@ -123,6 +123,7 @@ describe("desktop screenshot to note wiring", () => {
     expect(mainSource).toContain("captureScreenshotToNote");
     expect(mainSource).toContain("captureScreenToNote");
     expect(mainSource).toContain("createScreenshotCaptureGuard");
+    expect(mainSource).toContain("sentScreenshotCaptureIds");
     expect(mainSource).toContain("pendingScreenshotImport = null");
     expect(mainSource).not.toContain("overlay.html");
     expect(mainSource).toContain("copy.screenshotToNote");
@@ -130,10 +131,13 @@ describe("desktop screenshot to note wiring", () => {
     expect(mainSource).not.toContain('label: copy.backupNow, click: () => sendDesktopCommand("backup-now")');
     expect(preloadSource).toContain("onImportScreenshot");
     expect(preloadSource).toContain("screenshotImportListener");
+    expect(preloadSource).toContain("rendererReadySent");
+    expect(preloadSource).toContain("removeAllListeners");
     expect(preloadSource).toContain('value.type === "Buffer"');
     expect(workspaceSource).toContain("onImportScreenshot");
     expect(workspaceSource).toContain("createScreenshotMemo");
     expect(workspaceSource).toContain("screenshotImportGate");
+    expect(workspaceSource).toContain("handleImportScreenshotRef");
     expect(workspaceSource).toContain("screenshotFileFromImportPayload");
     expect(workspaceSource).not.toContain("setPendingEditorInsert");
   });

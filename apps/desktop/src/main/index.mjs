@@ -219,6 +219,7 @@ const desktopRuntimeSystemInfo = () => ({
   osRelease: operatingSystemRelease(),
   electron: process.versions.electron || "unknown",
   chrome: process.versions.chrome || "unknown",
+  dataDir: sidecarDataDirectory(activeAccountId),
 });
 
 const desktopDiagnosticSystemInfo = async () => {
@@ -509,6 +510,7 @@ const importMarkdownFile = async (filePath) => {
 let pendingMarkdownImport = null;
 let pendingScreenshotImport = null;
 const screenshotCaptureGuard = createScreenshotCaptureGuard();
+const sentScreenshotCaptureIds = new Set();
 let rendererReady = false;
 
 const flushPendingMarkdownImport = () => {
@@ -527,6 +529,7 @@ const sendScreenshotImport = (payload) => {
     return;
   }
   pendingScreenshotImport = null;
+  if (ipcPayload.captureId) sentScreenshotCaptureIds.add(ipcPayload.captureId);
   mainWindow.webContents.send("desktop:import-screenshot", ipcPayload);
 };
 
