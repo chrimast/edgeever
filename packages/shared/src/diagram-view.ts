@@ -6,6 +6,8 @@ import {
   resolveArchitectureSurface,
 } from "./diagram-architecture-style";
 import {
+  FLOWCHART_EDGE_LABEL_FONT_SIZE,
+  FLOWCHART_EDGE_LABEL_LINE_HEIGHT,
   FLOWCHART_EDGE_ROUTER,
   FLOWCHART_LABEL_FONT,
   flowchartEdgeIsStraight,
@@ -17,6 +19,8 @@ import type { DiagramDocument, DiagramTheme } from "./diagram";
 import { buildDiagramPalette } from "./diagram-palette";
 import {
   MIND_MAP_CONNECTOR_NAME,
+  MIND_MAP_EDGE_LABEL_FONT_SIZE,
+  MIND_MAP_EDGE_LABEL_LINE_HEIGHT,
   mindMapBranchSides,
   mindMapEdgeLineAttrs,
   mindMapEdgeTerminal,
@@ -166,8 +170,12 @@ export const diagramDocumentToX6Cells = (
       ?? mindEdge?.stroke
       ?? flowchartSurface?.edge
       ?? palette.flowEdge;
-    const orthogonalPorts = (document.kind === "flowchart" || document.kind === "architecture") && sourceNode && targetNode
-      ? flowchartEdgePorts(sourceNode, targetNode)
+    const orthogonalPorts = sourceNode && targetNode
+      ? document.kind === "architecture"
+        ? architectureEdgePorts(sourceNode, targetNode)
+        : document.kind === "flowchart"
+          ? flowchartEdgePorts(sourceNode, targetNode)
+          : null
       : null;
     const orthogonalStraight = Boolean(orthogonalPorts && sourceNode && targetNode && flowchartEdgeIsStraight(sourceNode, targetNode));
     return {
