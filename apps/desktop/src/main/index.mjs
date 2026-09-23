@@ -1819,6 +1819,19 @@ const startApplication = async () => {
   // user-visible critical path so the first installed launch opens promptly.
   await ejectMountedMacInstallers();
   await confirmMacInstallation();
+  void enableMacShareExtension({
+    platform: process.platform,
+    packaged: app.isPackaged,
+    executablePath: process.execPath,
+    exists: existsSync,
+    execFile,
+  }).then((result) => {
+    if (result.enabled) void writeDiagnostic("share-extension.enabled");
+  }).catch((error) => {
+    void writeDiagnostic("share-extension.enable-failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
   configureAutoUpdater();
   handleOpenTarget(process.argv);
   protocolUrlsReady = true;

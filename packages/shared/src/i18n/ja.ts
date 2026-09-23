@@ -1670,6 +1670,7 @@ export const ja = {
     restoreConfirmTitle: "この履歴の版を復元",
     restoreConfirmDescription: "現在の内容はこの履歴の版で置き換えられます。復元後も新しい版は作成されます。",
     restoreConfirmLabel: "復元",
+    formActor: "フォーム送信",
   },
   pdfViewer: {
     loading: "PDF を読み込み中…",

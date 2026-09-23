@@ -1670,6 +1670,7 @@ export const enUS = {
     restoreConfirmTitle: "Restore this historical version",
     restoreConfirmDescription: "The current content will be replaced by this historical version, and a new revision will still be created.",
     restoreConfirmLabel: "Restore",
+    formActor: "Form submission",
   },
   pdfViewer: {
     loading: "Loading PDF…",

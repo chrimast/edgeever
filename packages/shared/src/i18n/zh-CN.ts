@@ -1670,6 +1670,7 @@ export const zhCN = {
     restoreConfirmTitle: "恢复到这个历史版本",
     restoreConfirmDescription: "当前内容会被这个历史版本替换，恢复后仍会产生新的历史记录。",
     restoreConfirmLabel: "恢复",
+    formActor: "表单提交",
   },
   pdfViewer: {
     loading: "正在加载 PDF…",
