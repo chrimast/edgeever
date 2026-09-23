@@ -115,6 +115,7 @@ import {
   ARCHITECTURE_NODE_FONT_WEIGHT,
   ARCHITECTURE_NODE_LINE_HEIGHT,
   ARCHITECTURE_SHAPE_RESOURCE,
+  architectureEdgePorts,
   architectureEdgeVisual,
   architectureIconOffset,
   architectureNodeVisual,
@@ -1241,10 +1242,10 @@ const diagramEdgeLabel = (
         label: {
           text,
           fill: appearance === "dark" ? "#E2E8F0" : "#334155",
-          fontSize: 11,
+          fontSize: ARCHITECTURE_EDGE_LABEL_FONT_SIZE,
           fontWeight: 500,
           fontFamily: ARCHITECTURE_LABEL_FONT,
-          lineHeight: 16,
+          lineHeight: ARCHITECTURE_EDGE_LABEL_LINE_HEIGHT,
           textWrap: { width: 140, height: 512 },
         },
         body: {
@@ -1272,10 +1273,10 @@ const diagramEdgeLabel = (
         label: {
           text,
           fill: appearance === "dark" ? "#E2E8F0" : "#475569",
-          fontSize: 11,
+          fontSize: FLOWCHART_EDGE_LABEL_FONT_SIZE,
           fontWeight: 500,
           fontFamily: FLOWCHART_LABEL_FONT,
-          lineHeight: 16,
+          lineHeight: FLOWCHART_EDGE_LABEL_LINE_HEIGHT,
           textWrap: { width: 140, height: 512 },
         },
         body: {
@@ -1300,7 +1301,13 @@ const diagramEdgeLabel = (
   return {
     position: { distance: 0.5, offset: 0 },
     attrs: {
-      label: { text, fill: palette.nodeText, fontSize: 12, lineHeight: 16, textWrap: { width: 140, height: 512 } },
+      label: {
+        text,
+        fill: palette.nodeText,
+        fontSize: MIND_MAP_EDGE_LABEL_FONT_SIZE,
+        lineHeight: MIND_MAP_EDGE_LABEL_LINE_HEIGHT,
+        textWrap: { width: 140, height: 512 },
+      },
       body: { ref: "label", refWidth: 1, refHeight: 1, refWidth2: 12, refHeight2: 8, refX: -6, refY: -4,
         fill: palette.canvas,
         stroke: palette.nodeStroke, strokeWidth: 1, rx: 4, ry: 4 },
