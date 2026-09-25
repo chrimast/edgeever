@@ -1817,6 +1817,7 @@ export const WorkspaceApp = ({
     creatingMemoSelectionRef.current = true;
     setWeChatImportsInProgress((count) => count + 1);
     let savedMemo: MemoDetail | null = null;
+    let resumeDesktopSync: (() => void) | null = null;
     try {
       if (isDesktopResourceRuntime()) {
         resumeDesktopSync = await (await import("@/lib/desktop-sync")).pauseDesktopSyncForImport();
@@ -1880,6 +1881,7 @@ export const WorkspaceApp = ({
       }
       creatingMemoSelectionRef.current = false;
     } finally {
+      resumeDesktopSync?.();
       setWeChatImportsInProgress((count) => Math.max(0, count - 1));
     }
   }, [defaultMemoNotebookId, imageCompressionEnabled, localDataScope, memoView, notebooks, repository, selectedNotebookId, t]);
