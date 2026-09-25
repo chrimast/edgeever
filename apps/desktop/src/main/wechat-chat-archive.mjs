@@ -475,6 +475,29 @@ const buildSummaryCard = (messages, mediaItems) => {
     } else {
       timeRange = `${firstTime} ~ ${lastTime}`;
     }
+
+    const mediaMatch = MEDIA_LINE.exec(trimmed);
+    if (mediaMatch) {
+      const item = mediaByName.get(posix.basename(mediaMatch[2]));
+      if (item) {
+        item.used = true;
+        rendered.push(mediaMarkdown(item));
+        index += 1;
+        continue;
+      }
+    }
+
+    const link = parseLink(trimmed);
+    if (link) {
+      rendered.push(`[${escapeMarkdownText(link.title)}](${link.url})`);
+      index += 1;
+      continue;
+    }
+
+    if (trimmed) {
+      rendered.push(renderTextMessage(trimmed));
+    }
+    index += 1;
   }
 
   const imageCount = mediaItems.filter((item) => isImage(item.filename)).length;
