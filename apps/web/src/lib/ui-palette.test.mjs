@@ -37,6 +37,8 @@ describe("application color system", () => {
     expect(globals).not.toContain("--slate-500-rgb: 100 116 139;");
     expect(contrastRatio("#222222", "#ffffff")).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio("#737373", "#ffffff")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#27272a", "#f8fafb")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#737373", "#f8fafb")).toBeGreaterThanOrEqual(4.5);
   });
 
   test("keeps dark workspace surfaces distinct without blue-black color casts", () => {
