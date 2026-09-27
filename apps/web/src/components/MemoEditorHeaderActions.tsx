@@ -59,7 +59,7 @@ export const MemoEditorHeaderActions = ({
             aria-label={t("editor.moreAria")}
           >
             <MoreHorizontal className="h-4 w-4" />
-            {deployedUpdateUnseen ? <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-white" /> : null}
+            {deployedUpdateUnseen ? <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-card" /> : null}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent

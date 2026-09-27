@@ -113,9 +113,7 @@ export const MobileBottomNav = ({
             <DropdownMenuItem className="gap-2 text-xs leading-5" onSelect={() => onCreateMemo("table")}>
               <Table2 className="h-4 w-4 shrink-0" />
               <span className="min-w-0 flex-1 truncate">{t("structuredTable.name")}</span>
-              <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200/80 bg-emerald-50 px-1.5 text-xs font-normal leading-5 text-emerald-700">
-                Beta
-              </span>
+              <span className={BETA_BADGE_CLASSNAME}>Beta</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

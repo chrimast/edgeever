@@ -422,7 +422,7 @@ export const TemplatesPane = ({
 
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-1.5 text-xs font-semibold text-slate-50 transition-colors hover:bg-slate-800 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-card px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50"
                         disabled={!canCreateMemo || isCreating}
                         onClick={(e) => {
                           e.stopPropagation();

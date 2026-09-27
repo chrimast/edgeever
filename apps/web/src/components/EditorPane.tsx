@@ -39,6 +39,7 @@ import { MemoEditorFocusModeButton, MemoEditorTopRowLeading, MemoEditorUpdatedLa
 import { MemoEditorToolbarDivider } from "@/components/MemoEditorToolbarChrome";
 import {
   MEMO_EDITOR_READING_GUTTER_CLASS_NAME,
+  MEMO_EDITOR_READING_GUTTER_PROPERTIES_CLASS_NAME,
   MEMO_EDITOR_TOP_ROW_CLASS_NAME,
   nextTitleStatusClearance,
 } from "@/components/MemoEditorChromeDensity";
@@ -330,6 +331,7 @@ type EditorPaneProps = {
   pluginHost: EdgeEverPluginHost;
   pluginNavigationRequest?: { id: number; noteId: string; search: string } | null;
   onOpenExecutionCenter: () => void;
+  demoMode?: boolean;
 };
 
 type RichEditorPaneProps = EditorPaneProps & {
@@ -407,6 +409,7 @@ const RichEditorPane = ({
   pluginHost,
   pluginNavigationRequest,
   onOpenExecutionCenter,
+  demoMode = false,
   onRequestMobileNativeEdit,
 }: RichEditorPaneProps) => {
   const { t, i18n } = useTranslation();
@@ -486,7 +489,9 @@ const RichEditorPane = ({
   const [desktopReadingProtection, setDesktopReadingProtection] = useState(readDesktopReadingProtectionPreference);
   const [mobilePlainText, setMobilePlainText] = useState("");
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
-  const [editorOutlineCollapsed, setEditorOutlineCollapsed] = useState(readEditorOutlineCollapsedPreference);
+  const [editorOutlineCollapsed, setEditorOutlineCollapsed] = useState(() =>
+    readEditorOutlineCollapsedPreference({ defaultCollapsed: !demoMode })
+  );
   const [phonePreviewOpen, setPhonePreviewOpen] = useState(readEditorPhonePreviewPreference);
   const [memoIdCopyNotice, setMemoIdCopyNotice] = useState<{ status: "copied" | "error"; id: string } | null>(null);
   const handledSaveAndSyncTokenRef = useRef(saveAndSyncToken);
@@ -3926,7 +3931,7 @@ const RichEditorPane = ({
                   <DropdownMenuItem
                     className={cn(
                       "flex h-9 w-full items-center gap-2 px-3 text-left text-xs hover:bg-slate-50 cursor-pointer outline-none",
-                      isMemoShared ? "bg-emerald-50 text-emerald-800" : "text-slate-700",
+                      isMemoShared ? "bg-workspace-selection text-slate-950" : "text-slate-700",
                     )}
                     disabled={isLocalMemoId(memo.id)}
                     onClick={() => setShareOpen(true)}
@@ -4096,6 +4101,7 @@ const RichEditorPane = ({
         } as CSSProperties}
         className={cn(
           "edgeever-editor relative min-h-0 flex-1 bg-transparent",
+          MEMO_EDITOR_READING_GUTTER_PROPERTIES_CLASS_NAME,
           useMobilePlainTextEditor
             ? "overflow-visible"
             : useMarkdownSourceEditor
