@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { PanelRightClose, Sparkles, Undo2 } from "lucide-react";
+import { ArrowUp, PanelRightClose, Sparkles, Undo2 } from "lucide-react";
 import type { MouseEvent } from "react";
 import type { InfographicConversationTurn } from "@edgeever/shared";
 import { Button } from "@/components/ui/button";
