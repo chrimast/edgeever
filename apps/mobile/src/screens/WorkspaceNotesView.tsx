@@ -452,14 +452,43 @@ const MemoCard = memo(function MemoCard({
     >
       {selectionMode ? (
         <Pressable
-          accessibilityLabel={`${selected ? "取消选择" : "选择"} ${memoTitle}`}
+          accessibilityHint={selectionMode ? undefined : (resolvedLocale !== "zh-CN" ? "Long press to select this note" : "长按选择这条笔记")}
+          accessibilityLabel={memoTitle}
           accessibilityRole="button"
-          accessibilityState={{ selected }}
-          onPress={onPress}
-          style={styles.memoSelectionButton}
+          delayLongPress={520}
+          onLongPress={onLongPress ? () => {
+            handledLongPressRef.current = true;
+            onLongPress();
+          } : undefined}
+          onPress={() => {
+            if (handledLongPressRef.current) {
+              handledLongPressRef.current = false;
+              return;
+            }
+            onPress();
+          }}
+          style={[styles.memoCardContent, listDensity === "compact" && styles.memoCardContentCompact, selectionMode && styles.memoCardContentWithSelection]}
         >
-          <View style={[styles.selectionIndicator, selected && styles.selectionIndicatorActive]}>
-            {selected ? <Check color="#ffffff" size={14} /> : null}
+          <View style={styles.memoCardTop}>
+            {memo.isPinned ? (
+              <Text accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.memoPinnedStar}>★</Text>
+            ) : null}
+            <Text numberOfLines={1} style={styles.memoTitle}>
+              {memoTitle}
+            </Text>
+          </View>
+          {listDensity === "preview" ? (
+            <Text numberOfLines={2} style={styles.memoExcerpt}>
+              {memo.excerpt || "空笔记"}
+            </Text>
+          ) : null}
+          <View style={[styles.memoMeta, listDensity === "compact" && styles.memoMetaCompact]}>
+            <Text style={styles.memoDate}>{listTimestampKind} {listTimestampLabel}</Text>
+            {memo.tags.slice(0, 3).map((tag) => (
+              <Text key={tag} style={styles.tag}>
+                #{tag}
+              </Text>
+            ))}
           </View>
         </Pressable>
       ) : null}
