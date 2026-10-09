@@ -1236,7 +1236,7 @@ export const ja = {
     copied: "コピーしました",
     insertIntoNote: "ノートに挿入",
     retry: "文字起こしを再試行",
-    attachmentNotice: "ノートにアップロード済みの音声・動画添付ファイルのみ文字起こしできます。音声は端末上で抽出・分割され（各部分は最大 24 MB）、クライアントから設定したモデルサービスへ直接送信されます。モデルキーは現在ログイン中のクライアントに渡され、ブラウザーからの通信には提供元の CORS 対応も必要です。",
+    attachmentNotice: "音声トラックをこのクライアントで抽出・分割し、選択した音声認識サービスへ各部分を直接送信します。",
   },
   aiPrompts: {
     title: "プロンプトライブラリ",
@@ -2015,6 +2015,12 @@ export const ja = {
     previous: "前の PDF",
     next: "次の PDF",
   },
+  wordViewer: {
+    loading: "Word のプレビューを読み込み中…",
+    unavailable: "この Word 文書はプレビューできません。ダウンロードするか、外部で開くことはできます。",
+    previewTooLarge: "10 MiB 超のためプレビューしません",
+    previewLabel: "Word プレビュー：{{filename}}",
+  },
   audioPlayer: {
     label: "音声プレーヤー：{{filename}}",
     unavailable: "この端末ではこの音声形式を再生できません。ダウンロードするか、外部で開くことはできます。",
@@ -2162,7 +2168,6 @@ export const ja = {
       theme: "テーマ",
       background: "背景",
       themes: {
-        slate: "クラシックライト",
         aurora: "オーロラ",
         sunset: "夕焼け",
         midnight: "ミッドナイト",
@@ -2284,6 +2289,17 @@ export const ja = {
     expandOutlineHeading: "{{name}} を開く",
   },
   sharing: {
+    managementTitle: "共有の管理",
+    managementDescription: "公開リンクでアクセスできるノートを確認し、共有設定を管理します。",
+    managementLoading: "共有ノートを読み込み中",
+    managementLoadFailed: "最新の共有一覧を読み込めませんでした。接続を確認して再試行してください。",
+    managementEmpty: "現在共有中のノートはありません。",
+    viewAll: "すべての共有を見る",
+    retry: "再試行",
+    loadMore: "さらに読み込む",
+    sharedOn: "共有日 {{date}}",
+    passwordProtected: "パスワード保護あり",
+    unknownNotebook: "不明なノートブック",
     action: "ノートを共有",
     afterSync: "同期後にノートを共有",
     active: "共有中",

@@ -1236,7 +1236,7 @@ export const enUS = {
     copied: "Copied",
     insertIntoNote: "Insert into note",
     retry: "Retry transcription",
-    attachmentNotice: "Only audio and video attachments already uploaded to notes can be transcribed. Audio is extracted and split on your device (up to 24 MB per segment), then sent directly from the client to your configured model service. The model key is given to the current signed-in client; browser calls also require provider CORS support.",
+    attachmentNotice: "Audio is extracted and split on this client, then sent segment by segment directly to the selected speech service.",
   },
   aiPrompts: {
     title: "Prompt library",
@@ -2015,6 +2015,12 @@ export const enUS = {
     previous: "Previous PDF",
     next: "Next PDF",
   },
+  wordViewer: {
+    loading: "Loading Word preview…",
+    unavailable: "This Word document cannot be previewed. You can still download it or open it externally.",
+    previewTooLarge: "Preview disabled over 10 MiB",
+    previewLabel: "Word preview: {{filename}}",
+  },
   audioPlayer: {
     label: "Audio player: {{filename}}",
     unavailable: "This audio format cannot be played on this device. You can still download it or open it externally.",
@@ -2162,7 +2168,6 @@ export const enUS = {
       theme: "Theme",
       background: "Background",
       themes: {
-        slate: "Classic Light",
         aurora: "Aurora",
         sunset: "Sunset",
         midnight: "Midnight",
@@ -2284,6 +2289,17 @@ export const enUS = {
     expandOutlineHeading: "Expand {{name}}",
   },
   sharing: {
+    managementTitle: "Share management",
+    managementDescription: "See notes currently accessible through public links and manage each share.",
+    managementLoading: "Loading shared notes",
+    managementLoadFailed: "Could not load the latest shares. Check your connection and try again.",
+    managementEmpty: "No notes are currently shared.",
+    viewAll: "View all shares",
+    retry: "Retry",
+    loadMore: "Load more",
+    sharedOn: "Shared {{date}}",
+    passwordProtected: "Password protected",
+    unknownNotebook: "Unknown notebook",
     action: "Share note",
     afterSync: "Share note after sync",
     active: "Shared",
