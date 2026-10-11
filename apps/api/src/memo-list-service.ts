@@ -18,6 +18,7 @@ export type MemoSummaryRow = {
   title: string | null;
   excerpt: string;
   content_text?: string | null;
+  is_poster?: number;
   content_markdown?: string | null;
   tags_json: string;
   is_pinned: number;

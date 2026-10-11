@@ -1,4 +1,5 @@
-import { ARCHITECTURE_RESOURCE_ICONS, INFOGRAPHIC_NOTE_TEMPLATES, TABLE_FIELD_TYPES } from "@edgeever/shared";
+import { posterPatchInputSchema, posterOperationsInputSchema } from "./mcp-poster-schema";
+import { ARCHITECTURE_RESOURCE_ICONS, INFOGRAPHIC_NOTE_TEMPLATES, POSTER_FORMATS, POSTER_TEMPLATES, TABLE_FIELD_TYPES } from "@edgeever/shared";
 
 const DIAGRAM_IR_NODE_TYPES = [
   "topic",
@@ -156,7 +157,7 @@ const MCP_TOOL_DEFINITIONS = [
   },
   {
     name: "search_memos",
-    description: "Search active EdgeEver memos by text, tag, notebook, time range, pin state, or resource presence. query is optional. For recently created or added notes, pass createdAfter and omit query; do not put this week/最近/新增 in query. Time bounds accept YYYY-MM-DD or ISO date-time.",
+    description: "Search active EdgeEver memos by text, tag, notebook, time range, pin state, resource presence, or poster type. Use poster=true to find editable poster notes (海报笔记); do not search for the word 海报 to identify the type. query is optional. For recently created or added notes, pass createdAfter and omit query; do not put this week/最近/新增 in query. Time bounds accept YYYY-MM-DD or ISO date-time.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -170,13 +171,14 @@ const MCP_TOOL_DEFINITIONS = [
         updatedBefore: { type: "string", description: "ISO 8601 date (YYYY-MM-DD) or date-time. Date-only means 23:59:59.999Z." },
         isPinned: { type: "boolean" },
         hasResources: { type: "boolean" },
+        poster: { type: "boolean", description: "true: only editable posters; false: exclude posters; omitted: all types." },
         limit: { type: "integer", minimum: 1, maximum: 50 },
       },
     },
   },
   {
     name: "list_memos",
-    description: "List EdgeEver memos with pagination. Use includeContent when full Markdown is needed.",
+    description: "List EdgeEver memos with pagination. Use poster=true to list only editable poster notes (海报笔记), false to exclude them. Use includeContent when full Markdown is needed.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -186,6 +188,7 @@ const MCP_TOOL_DEFINITIONS = [
         offset: { type: "integer", minimum: 0 },
         includeContent: { type: "boolean" },
         includeDeleted: { type: "boolean" },
+        poster: { type: "boolean", description: "Filter by editable poster type before pagination." },
       },
     },
   },
@@ -204,7 +207,7 @@ const MCP_TOOL_DEFINITIONS = [
   },
   {
     name: "create_memo",
-    description: "Create a memo in a notebook.",
+    description: "Create a prose Markdown memo in a notebook. For an editable poster/海报笔记, use create_poster_memo instead; never substitute poster-style prose.",
     inputSchema: {
       type: "object",
       required: ["notebookId"],
@@ -504,7 +507,7 @@ const MCP_TOOL_DEFINITIONS = [
   },
   {
     name: "update_memo",
-    description: "Update memo title, Markdown, tags, notebook, or pinned state.",
+    description: "Update memo title, Markdown, tags, notebook, or pinned state. To generate an editable poster/海报笔记, call create_poster_memo; to edit one, use get_poster then update_poster. Never manually encode poster source or replace a poster request with ordinary prose.",
     inputSchema: {
       type: "object",
       required: ["memoId"],
@@ -524,7 +527,7 @@ const MCP_TOOL_DEFINITIONS = [
   },
   {
     name: "trash_memos",
-    description: "Move one or more active memos to trash. Use dryRun to preview affected memos.",
+    description: "Move one or more active memos, including editable posters, to trash. This is recoverable through restore_memos. Find the exact IDs with search_memos or list_memos (poster=true for posters); never guess IDs. Use dryRun to preview affected memos.",
     inputSchema: {
       type: "object",
       required: ["memoIds"],
@@ -1030,6 +1033,7 @@ const NON_DESTRUCTIVE_MCP_TOOLS = new Set([
   "create_table_memo",
   "create_diagram_memo",
   "create_infographic_memo",
+  "create_poster_memo",
   "import_memos",
   "restore_memos",
   "move_memos",

@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { globSync, readFileSync } from "node:fs";
 import { Database } from "bun:sqlite";
+import { claimPosterRender } from "./poster-render-service";
+import { registerPosterRenderRoutes } from "./poster-render-routes";
+import { Hono } from "hono";
 import { callMcpTool } from "./index.ts";
 import { createPosterDocument, serializePosterDocument, parsePosterDocument, addTableField, parseDiagramDocument, parseInfographicDocument, parseTableDocument, serializeTableDocument, createDefaultTableDocument } from "@edgeever/shared";
 
