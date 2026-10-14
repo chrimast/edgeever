@@ -89,7 +89,7 @@ describe("preparePublishArticle", () => {
       const root = preparePublishArticle("<p><strong>重点</strong> <code>Cmd/Ctrl + E</code></p>", container);
       expect(css(root.querySelector("strong"))).toContain("color:#7351CF");
       expect(css(root.querySelector("code"))).toContain("color:#3d4450");
-      expect(css(root.querySelector("code"))).toContain("background:#f3f5f7");
+      expect(css(root.querySelector("code"))).toContain("background:#e9edf1");
     } finally {
       globalThis.getComputedStyle = previous;
     }
