@@ -1,3 +1,4 @@
+import { FONT_CATALOG, FONT_IDS } from "@edgeever/shared/font-catalog";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DEFAULT_MEMO_TITLE, parseDiagramDocument, type MemoDetail, type Notebook, type TiptapDoc } from "@edgeever/shared";
 import {

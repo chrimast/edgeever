@@ -1,3 +1,4 @@
+import { FONT_IDS } from "@edgeever/shared/font-catalog";
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { globSync, readFileSync } from "node:fs";
