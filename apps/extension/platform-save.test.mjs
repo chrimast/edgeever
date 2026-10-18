@@ -1,3 +1,4 @@
+import { prepareJikeWebDetail } from "./jike-web-test-state.mjs";
 import { clipDateTimeText } from "./src/clip-time.ts";
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";

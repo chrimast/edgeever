@@ -1,3 +1,6 @@
+import { prepareJikeWebDetail } from "./jike-web-test-state.mjs";
+import { readJikeWebStateInPage } from "./src/jike-web-state.ts";
+import { runInNewContext } from "node:vm";
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { createDocument } from "@mixmark-io/domino";
@@ -7,12 +10,19 @@ import { readDouban, doubanCommentTarget } from "./src/douban-clip.ts";
 import { isPlatformClip, platformTarget, socialPlatform } from "./src/platform-clip.ts";
 import { markdownToDoc } from "../../packages/shared/src/content.ts";
 
+const detailState=(doc,pageUrl,id)=>runInNewContext(`(${readJikeWebStateInPage.toString()})(id)`,{document:doc,location:{href:pageUrl},URL,id});
+const readJike=(doc,url,target=platformTarget(url),state)=>readJikeSource(doc,url,target,state ?? (url.includes('/u/') ? detailState(doc,url,target?.id) : undefined));
+
 const urls = {
   wechat:"https://mp.weixin.qq.com/s/TC-ONpL3PGklsD0yhtcuBQ",sspai:"https://sspai.com/post/92653",juejin:"https://juejin.cn/post/6972051526416072717",
   jike:"https://m.okjike.com/originalPosts/66ac89b0314f5cced41012d3","jike-grid":"https://m.okjike.com/originalPosts/6715e824d9dc81724c2ec74d","jike-long":"https://m.okjike.com/originalPosts/64c9dd9a2edae6abdc610605",
   "douban-book":"https://book.douban.com/review/16093028/","douban-movie":"https://movie.douban.com/review/17798662/","douban-music":"https://music.douban.com/review/17855287/","douban-note":"https://www.douban.com/note/814698224/",
 };
-const fixture=(name)=>createDocument(readFileSync(new URL(`./fixtures/platforms/${name}.html`,import.meta.url),"utf8"));
+const fixture=(name)=>{
+ const doc=createDocument(readFileSync(new URL(`./fixtures/platforms/${name}.html`,import.meta.url),"utf8"));
+ if(name==='jike-web-detail'||name==='jike-web-grid')prepareJikeWebDetail(doc,name==='jike-web-grid'?'6715e824d9dc81724c2ec74d':undefined);
+ return doc;
+};
 const read=(name,doc=fixture(name))=>name.startsWith("jike") ? readJike(doc,urls[name]) : name.startsWith("douban") ? readDouban(doc,platformTarget(urls[name]),urls[name]) : readArticle(doc,urls[name],"公众号");
 
 test("article URLs normalize aliases and tracking, retaining only WeChat query identity/signature",()=>{
