@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { createDocument } from "@mixmark-io/domino";
 import { readArticle } from "./src/article-clip.ts";
-import { readJike, jikeExpandButton } from "./src/jike-clip.ts";
+import { readJike as readJikeSource, jikeExpandButton } from "./src/jike-clip.ts";
 import { readDouban, doubanCommentTarget } from "./src/douban-clip.ts";
 import { isPlatformClip, platformTarget, socialPlatform } from "./src/platform-clip.ts";
 import { markdownToDoc } from "../../packages/shared/src/content.ts";
@@ -497,4 +497,18 @@ test('Medium nested quote code and pre paragraph identity preserve language and 
  const before=d.documentElement.outerHTML,r=mediumContent(d,'https://medium.com/@writer/story-abcdef123456'),blocks=Array.from(r.body.querySelectorAll('pre'));
  expect(blocks.map(n=>n.textContent)).toEqual([code,'print(1)\nprint(2)']);expect(blocks.map(n=>n.className)).toEqual(['language-javascript','language-python']);expect(d.documentElement.outerHTML).toBe(before);
  const saved=[];const walk=n=>{if(n.type==='codeBlock')saved.push(n);for(const child of n.content||[])walk(child)};walk(markdownToDoc(platformHtmlMarkdown(r.body,'https://medium.com/@writer/story-abcdef123456')));expect(saved.map(n=>({language:n.attrs.language,text:n.content.map(c=>c.text).join('')}))).toEqual([{language:'javascript',text:code},{language:'python',text:'print(1)\nprint(2)'}]);
+});
+
+for(const invalid of ['old-post','missing-props','stale-marker'])test(`Jike Web detail rejects ${invalid} identity under a same-author new route`,()=>{
+ const d=fixture('jike-web-detail'),card=d.querySelector('[class*="_postCard_"]'),url=jikeWebUrl.replace('64c9dd9a2edae6abdc610605','6715e824d9dc81724c2ec74d');
+ if(invalid==='missing-props')delete card.__reactProps$fixture;
+ if(invalid==='stale-marker')card.setAttribute('data-edgeever-jike-id','6715e824d9dc81724c2ec74d');
+ expect(detailState(d,url,'6715e824d9dc81724c2ec74d')).toBeNull();
+ expect(readJike(d,url)).toEqual({ok:false,reason:'changed'});
+});
+
+test('Jike Web mobile mentions already containing @ match the same public post text',()=>{
+ const d=fixture('jike-web-detail');
+ for(const mention of d.querySelectorAll('[class*="_mentionUser_"]'))mention.textContent='@'+mention.textContent.trim();
+ const r=readJike(d,jikeWebUrl);expect(r.ok).toBe(true);expect(r.clip.markdown).toContain('凌空小鱼儿');expect(r.clip.markdown).not.toContain('@@');
 });
