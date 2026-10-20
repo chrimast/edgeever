@@ -232,7 +232,7 @@ export const streamDirectCompanion = async (
       abortSignal: options.signal,
     });
     for await (const part of result.fullStream) {
-      options.signal?.throwIfAborted();
+      throwIfAborted(options.signal);
       if (part.type === "error") throw part.error;
       if (part.type !== "text-delta") continue;
       const delta = typeof part.text === "string" ? part.text : "";

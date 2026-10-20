@@ -57,7 +57,7 @@ Select messages in WeChat, tap "Combine and Forward" (合并转发), and choose 
 
 | 1. Forward to EdgeEver | 2. Structured Note Preview |
 | :---: | :---: |
-| ![WeChat share to EdgeEver](assets/best-practices/wechat-share-to-edgeever.png) | ![WeChat chat history imported into EdgeEver note](assets/best-practices/wechat-chat-imported-note.png) |
+| ![WeChat share to EdgeEver](assets/best-practices/original-image/wechat-chat-message-import/select-export.png) | ![WeChat chat history imported into EdgeEver note](assets/best-practices/original-image/wechat-chat-message-import/import-as-note.png) |
 
 ---
 
@@ -95,7 +95,7 @@ When viewing Xiaohongshu on the web, right-click and choose **"Save Note to Edge
 
 | 1. Right-Click Clipper Menu | 2. Multi-Column Gallery Note |
 | :---: | :---: |
-| ![Right-click save Xiaohongshu note to EdgeEver](assets/best-practices/xiaohongshu-clip-menu.png) | ![Xiaohongshu note clipped into multi-column gallery](assets/best-practices/xiaohongshu-clipped-note.png) |
+| ![Right-click save Xiaohongshu note to EdgeEver](assets/best-practices/original-image/web-clipper/xiaohongshu/xiaohongshu.png) | ![Xiaohongshu note clipped into multi-column gallery](assets/best-practices/original-image/web-clipper/xiaohongshu/xiaohongshu-in-note.png) |
 
 ---
 
@@ -108,7 +108,7 @@ When browsing X (Twitter), right-click any post and select **"Save Tweet to Edge
 
 | 1. Right-Click Save Tweet | 2. Note with Quotes & Gallery |
 | :---: | :---: |
-| ![Right-click save tweet to EdgeEver](assets/best-practices/twitter-clip-menu.png) | ![X tweet clipped into EdgeEver note with quote](assets/best-practices/twitter-clipped-note.png) |
+| ![Right-click save tweet to EdgeEver](assets/best-practices/original-image/web-clipper/twitter/twitter.png) | ![X tweet clipped into EdgeEver note with quote](assets/best-practices/original-image/web-clipper/twitter/twitter-in-note.png) |
 
 ---
 
@@ -120,7 +120,7 @@ When reading Zhihu on the web, right-click any specific answer or article and se
 
 | 1. Right-Click Save Answer/Article | 2. Structured Q&A Note Preview |
 | :---: | :---: |
-| ![Right-click save Zhihu answer to EdgeEver](assets/best-practices/zhihu-clip-menu.png) | ![Zhihu answer clipped into EdgeEver note](assets/best-practices/zhihu-clipped-note.png) |
+| ![Right-click save Zhihu answer to EdgeEver](assets/best-practices/original-image/web-clipper/zhihu/zhihu.png) | ![Zhihu answer clipped into EdgeEver note](assets/best-practices/original-image/web-clipper/zhihu/zhihu-in-note.png) |
 
 ---
 

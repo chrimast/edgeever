@@ -2,6 +2,7 @@ import {
   parsePreparedAiGeneration,
   streamDirectAiGeneration,
 } from "./ai-direct-stream";
+import { throwIfAborted } from "./abort-signal";
 
 import { createPluginCapabilities } from './plugin-capabilities';
 import type {

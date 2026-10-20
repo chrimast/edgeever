@@ -57,7 +57,7 @@ EdgeEver 采用「目录树 · 笔记列表 · 编辑区」三栏布局：
 
 | 1. 微信合并转发至 EdgeEver | 2. 结构化笔记预览 |
 | :---: | :---: |
-| ![微信转发到其他应用选择 EdgeEver](assets/best-practices/wechat-share-to-edgeever.png) | ![EdgeEver 导入后的微信聊天记录笔记效果](assets/best-practices/wechat-chat-imported-note.png) |
+| ![微信转发到其他应用选择 EdgeEver](assets/best-practices/original-image/wechat-chat-message-import/select-export.png) | ![EdgeEver 导入后的微信聊天记录笔记效果](assets/best-practices/original-image/wechat-chat-message-import/import-as-note.png) |
 
 ---
 
@@ -185,7 +185,7 @@ EdgeEver 采用「目录树 · 笔记列表 · 编辑区」三栏布局：
 
 | 1. 选题库多维表格 | 2. 员工信息多维表格 |
 | :---: | :---: |
-| ![AI生成自媒体选题库多维表格](assets/best-practices/ai-database-media-topics.png) | ![AI生成员工信息登记多维表格](assets/best-practices/ai-database-employee-roster.png) |
+| ![AI生成自媒体选题库多维表格](assets/best-practices/original-image/database-note/database-hot-select.png) | ![AI生成员工信息登记多维表格](assets/best-practices/original-image/database-note/database-employee-register.png) |
 
 ---
 
@@ -198,7 +198,7 @@ EdgeEver 采用「目录树 · 笔记列表 · 编辑区」三栏布局：
 
 | 1. 开启「表单收集」 | 2. 在线表单填报页面 |
 | :---: | :---: |
-| ![多维表格顶部点击表单收集按钮](assets/best-practices/database-form-collection-btn.png) | ![对外公开的在线表单填报界面](assets/best-practices/database-public-form-page.png) |
+| ![多维表格顶部点击表单收集按钮](assets/best-practices/original-image/database-note/database-form-create.png) | ![对外公开的在线表单填报界面](assets/best-practices/original-image/database-note/database-form-online.png) |
 
 ---
 
