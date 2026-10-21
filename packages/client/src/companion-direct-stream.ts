@@ -12,6 +12,7 @@ import type {
 } from "@edgeever/shared";
 import type { ModelMessage } from "ai";
 import { companionFailureDiagnostics, sealCompanionProcess } from "@edgeever/shared";
+import { throwIfAborted } from "./abort-signal";
 import { createClientAiModel } from "./ai-model";
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
