@@ -1018,10 +1018,6 @@ export const pl = {
     loginItem: {
       title: "Uruchamiaj po włączeniu komputera",
       aria: "Uruchamiaj EdgeEver po włączeniu komputera",
-      description: "Otwieraj EdgeEver po uruchomieniu komputera.",
-      launchModeLabel: "Po uruchomieniu",
-      launchModeWindow: "Otwórz główne okno",
-      launchModeTray: "Zostaw w zasobniku",
       requiresApproval: "Zezwól EdgeEver w ustawieniach systemu, aby dokończyć włączanie.",
       saveFailed: "Nie udało się zapisać tego ustawienia.",
     },
@@ -1645,6 +1641,7 @@ export const pl = {
       close: "Zwiń asystenta",
       history: "Historia czatów",
       newThread: "Nowy czat",
+      currentInfographic: "Ta infografika",
       historyRecent: "Ostatnie 30 dni",
       historyOlder: "Wcześniej",
       historySearch: "Szukaj czatów",

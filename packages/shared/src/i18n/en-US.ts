@@ -1029,10 +1029,6 @@ export const enUS = {
     loginItem: {
       title: "Launch at startup",
       aria: "Launch EdgeEver at startup",
-      description: "Open EdgeEver after this computer starts.",
-      launchModeLabel: "After startup",
-      launchModeWindow: "Open the main window",
-      launchModeTray: "Stay in the tray",
       requiresApproval: "Allow EdgeEver in System Settings to finish turning this on.",
       saveFailed: "Could not save this setting.",
     },
@@ -1656,6 +1652,7 @@ export const enUS = {
       close: "Collapse assistant",
       history: "Chat history",
       newThread: "New chat",
+      currentInfographic: "This infographic",
       historyRecent: "Past 30 days",
       historyOlder: "Earlier",
       historySearch: "Search chats",
