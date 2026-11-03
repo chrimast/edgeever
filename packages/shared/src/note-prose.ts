@@ -436,3 +436,11 @@ export const noteProseCssVariables = (prose: ResolvedNoteProse): Record<string, 
   variables["--note-palette-bg"] = colors.background;
   return variables;
 };
+
+/** Independent reading rhythm shared by editor, publishing preview, and print. */
+export const noteProseStyleCssVariables = (style: Partial<NoteProseStylePreferences>): Record<string, string> => ({
+  "--editor-paragraph-spacing": `${parseNoteProseParagraphSpacing(style.paragraphSpacing) ?? 8}px`,
+  "--editor-body-text-align": parseNoteProseTextAlign(style.textAlign) ?? "left",
+  "--editor-body-letter-spacing": parseNoteProseLetterSpacing(style.letterSpacing) === null || style.letterSpacing === "default"
+    ? "-0.005em" : style.letterSpacing!,
+});

@@ -4,7 +4,6 @@ import {
   DEFAULT_NOTE_PROSE_LINE_HEIGHT,
   flattenDetailsForLinearHtml,
   NOTE_PROSE_HEADING_SCALE,
-  NOTE_PROSE_PARAGRAPH_SPACING_PX,
   noteProseCodeFontSize,
   parseNoteProseEmphasisStyle,
   parseNoteProseHeadingStyle,
@@ -27,7 +26,6 @@ import {
   readNoteProseStylePreference,
 } from "@/lib/note-prose-style-preference";
 
-const PARAGRAPH_SPACING = `${NOTE_PROSE_PARAGRAPH_SPACING_PX}px`;
 const PUBLISH_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif";
 const PUBLISH_MONO = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
 const BODY_COLOR = "#27272a";
@@ -62,6 +60,7 @@ const applyLegacyWeChatStyles = (
   _accentOnly = false,
   proseStyle: NoteProseStylePreferences = DEFAULT_NOTE_PROSE_STYLE_PREFERENCES,
 ) => {
+  const rhythm = noteProseStyleCssVariables(proseStyle);
   const fontSize = `${metrics.fontSize}px`;
   const lineHeight = String(metrics.lineHeight);
   const codeSize = `${noteProseCodeFontSize(metrics.fontSize)}px`;

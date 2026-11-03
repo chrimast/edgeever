@@ -1,6 +1,7 @@
 import {
   NOTE_PROSE_PALETTES,
   noteProseCssVariables,
+  noteProseStyleCssVariables,
   type NoteProsePaletteChoice,
   type NoteProseStylePreferences,
   type ResolvedNoteProse,
