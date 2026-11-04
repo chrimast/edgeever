@@ -45,7 +45,27 @@ export const NOTE_PROSE_EMPHASIS_STYLES = [
 export type NoteProseEmphasisStyle = (typeof NOTE_PROSE_EMPHASIS_STYLES)[number];
 export const DEFAULT_NOTE_PROSE_EMPHASIS_STYLE: NoteProseEmphasisStyle = "default";
 
+export const NOTE_PROSE_PARAGRAPH_SPACINGS = [8, 12, 16] as const;
+export type NoteProseParagraphSpacing = (typeof NOTE_PROSE_PARAGRAPH_SPACINGS)[number];
+export const NOTE_PROSE_TEXT_ALIGNS = ["left", "justify"] as const;
+export type NoteProseTextAlign = (typeof NOTE_PROSE_TEXT_ALIGNS)[number];
+export const NOTE_PROSE_LETTER_SPACINGS = ["default", "0.5px", "1px"] as const;
+export type NoteProseLetterSpacing = (typeof NOTE_PROSE_LETTER_SPACINGS)[number];
+
+export const parseNoteProseParagraphSpacing = (value: unknown): NoteProseParagraphSpacing | null =>
+  typeof value === "number" && (NOTE_PROSE_PARAGRAPH_SPACINGS as readonly number[]).includes(value)
+    ? value as NoteProseParagraphSpacing : null;
+export const parseNoteProseTextAlign = (value: unknown): NoteProseTextAlign | null =>
+  typeof value === "string" && (NOTE_PROSE_TEXT_ALIGNS as readonly string[]).includes(value)
+    ? value as NoteProseTextAlign : null;
+export const parseNoteProseLetterSpacing = (value: unknown): NoteProseLetterSpacing | null =>
+  typeof value === "string" && (NOTE_PROSE_LETTER_SPACINGS as readonly string[]).includes(value)
+    ? value as NoteProseLetterSpacing : null;
+
 export type NoteProseStylePreferences = {
+  paragraphSpacing: NoteProseParagraphSpacing;
+  textAlign: NoteProseTextAlign;
+  letterSpacing: NoteProseLetterSpacing;
   headingStyle: NoteProseHeadingStyle;
   quoteStyle: NoteProseQuoteStyle;
   emphasisStyle: NoteProseEmphasisStyle;
