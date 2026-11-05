@@ -1,11 +1,20 @@
 import { useSyncExternalStore } from "react";
 import { Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import evernoteLogo from "@/assets/import-logos/evernote.svg?url";
+import joplinLogo from "@/assets/import-logos/joplin.svg?url";
+import obsidianLogo from "@/assets/import-logos/obsidian.svg?url";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { NoteImportController } from "@/lib/note-import/controller";
 import { SETTINGS_CARD_DESCRIPTION_CLASSNAME, SETTINGS_CARD_HEADER_CLASSNAME, SETTINGS_CARD_ICON_CLASSNAME, SETTINGS_CARD_TITLE_CLASSNAME } from "./settings-ui";
 import { ThirdPartyImportDialog } from "./ThirdPartyImportDialog";
+
+const importSources = [
+  { label: "Evernote (.enex)", logo: evernoteLogo },
+  { label: "Obsidian", logo: obsidianLogo },
+  { label: "Joplin (.jex)", logo: joplinLogo },
+];
 
 export const ThirdPartyImportCard = ({ controller, onOpenMemo }: { controller: NoteImportController; onOpenMemo: (memoId: string, notebookId: string) => void }) => {
   const { t } = useTranslation();
