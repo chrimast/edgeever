@@ -2180,7 +2180,7 @@ export const pl = {
     whenReady: "Gdy aplikacja będzie gotowa",
     stagingWarning: "Nie usunięto prywatnych plików tymczasowych. Sprawdź uprawnienia folderu danych i uruchom aplikację ponownie.",
     cleanupWarning: "Kopia lokalna jest gotowa, ale nie udało się usunąć części starszych kopii.",
-    history: "Historia kopii zapasowych ({{count}})",
+    history: "Lokalne kopie ({{count}})",
     encrypted: "Zaszyfrowana",
     oncePassword: "Hasło zostanie użyte tylko raz i nie będzie zapisane.",
     importButton: "Przywróć z pliku",
