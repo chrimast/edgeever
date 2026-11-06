@@ -1,6 +1,9 @@
 # Minimal Evernote Migration Guide
 
-[简体中文](evernote-migration-guide.md) | [English](evernote-migration-guide.en-US.md)
+[简体中文](note-migration-guide.md) | [English](note-migration-guide.en-US.md)
+
+> 💡 **Notice**: All third-party note migration guides have been merged and updated into a unified guide:
+> 👉 **[Migrate from Third-Party Notes to EdgeEver: The Complete Guide](note-migration-guide.en-US.md)** (covering native GUI one-click import and AI Agent / MCP migration).
 
 We strongly recommend using an AI coding assistant, such as Codex, Antigravity, Claude Code, Cursor, WorkBuddy, OpenClaw, or Hermes Agent, to run the migration automatically. The current migration flow is optimized for streaming large archives and preprocessing empty text, and can handle multi-GB note libraries while preserving created/updated timestamps and nested notebook hierarchy.
 
