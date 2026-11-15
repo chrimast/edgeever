@@ -71,6 +71,19 @@ curl -fsSL https://edgeever.org/install.sh | bash
 `;
 
 describe("preparePublishArticle", () => {
+  test("uses a section wrapper so Zhihu can import headings and paragraphs separately", () => {
+    const html = "<p>Introduction</p><h2>Chapter</h2><p>Body</p><h3>Details</h3><p>End</p>";
+    const markdown = "Introduction\n\n## Chapter\n\nBody\n\n### Details\n\nEnd";
+    for (const root of [preparePublishArticle(html), prepareMarkdownPublishArticle(markdown)]) {
+      expect(root.tagName).toBe("SECTION");
+      expect(Array.from(root.children, (element) => element.tagName)).toEqual(["P", "H2", "P", "H3", "P"]);
+      expect(root.querySelector("h2").textContent).toBe("Chapter");
+      expect(css(root.querySelector("h2"))).toContain("font-weight:600");
+      expect(css(root)).toContain("background-color:#ffffff");
+      expect(root.outerHTML).toMatch(/^<section\b/);
+    }
+  });
+
   test("exports a light reading accent from a dark editor", () => {
     const container = document.createElement("div");
     container.dataset.notePalette = "violet";
@@ -353,7 +366,10 @@ describe("preparePublishArticle", () => {
       }
       container.dataset.noteMagazineCover = "false";
       const bodyCover = preparePublishArticle("<h1>正文标题</h1><p>正文</p>", container);
-      expect(bodyCover.querySelector("[data-ee-cover-tags]")?.textContent).toBe(tags.slice(0, 3).join(" · "));
+      expect(bodyCover.querySelector("[data-ee-cover-card]")).toBeNull();
+      expect(bodyCover.querySelector("[data-ee-cover-tags]")).toBeNull();
+      expect(bodyCover.querySelector("[data-ee-cover-footer]")).toBeNull();
+      expect(bodyCover.querySelector("h1")?.textContent).toBe("正文标题");
       expect(bodyCover.querySelectorAll("h1").length).toBe(1);
       container.dataset.noteMagazineCover = "true";
       container.dataset.noteTags = "[]";
@@ -361,17 +377,26 @@ describe("preparePublishArticle", () => {
 
       expect(root.querySelector("[data-ee-toc-cards]")).not.toBeNull();
       expect(root.querySelector("[data-ee-toc-cards]")?.textContent).toContain("2 PARTS");
-      const card = root.querySelector('[data-ee-toc-cards] section[style*="width: 136px"]');
+      const card = root.querySelector('[data-ee-toc-card]');
       expect(css(card)).toContain("background-color:#059669");
       expect(css(card)).toContain("linear-gradient(135deg,");
       expect(css(card)).not.toContain("color-mix");
-      const cards = root.querySelectorAll('[data-ee-toc-cards] section[style*="width: 136px"]');
+      const cards = root.querySelectorAll('[data-ee-toc-card]');
       expect(cards.length).toBe(2);
       for (const item of cards) {
         expect(css(item)).not.toContain("height:");
         expect(css(item.parentElement)).toContain("display:flex");
+        expect(css(item.parentElement)).toContain("flex-wrap:wrap");
+        expect(css(item.parentElement)).toContain("justify-content:flex-start");
+        expect(css(item.parentElement)).toContain("gap:8px");
+        expect(css(item)).toContain("width:146px");
+        expect(css(item)).toContain("max-width:100%");
+        expect(css(item)).toContain("flex:0 0 auto");
+        expect(css(item)).toContain("min-width:0");
+        expect(css(item)).toContain("margin:0");
         expect(css(item.parentElement)).toContain("align-items:stretch");
         expect(css(item)).toContain("box-sizing:border-box");
+        expect(css(item)).toContain("padding:12px");
         expect(css(item)).toContain("border:1px solid");
         expect(css(item.querySelector("p"))).toContain("line-height:1.4");
       }

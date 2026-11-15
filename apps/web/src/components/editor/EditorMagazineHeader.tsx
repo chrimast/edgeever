@@ -84,12 +84,10 @@ export const EditorMagazineHeader = ({
 }) => {
   const isNative = !palette || palette === "native";
   const [sections, setSections] = useState<SectionItem[]>([]);
-  const [leadSummary, setLeadSummary] = useState("");
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) {
       setSections([]);
-      setLeadSummary("");
       return;
     }
 
@@ -107,10 +105,6 @@ export const EditorMagazineHeader = ({
         };
       });
       setSections(nextSections);
-
-      const firstParagraph = dom.querySelector<HTMLElement>("blockquote p, p");
-      const firstText = (firstParagraph?.textContent || "").replace(/\s+/g, " ").trim();
-      setLeadSummary(firstText.slice(0, 42));
     };
 
     sync();
@@ -125,10 +119,6 @@ export const EditorMagazineHeader = ({
   const { primary, highlight } = splitCoverTitle(title || "");
   const topTag = formatNoteCoverTags(tags);
   const dateLabel = formatYearMonth(updatedAt);
-  const subtitleText = leadSummary
-    || (sections.length > 0
-      ? `${sections.length} 个核心章节，从全局脉络到关键细节完整拆解`
-      : "结构化核心脉络与实战要点梳理");
 
   const scrollToSection = (index: number) => {
     if (!editor || editor.isDestroyed) return;
@@ -203,7 +193,7 @@ export const EditorMagazineHeader = ({
               fontSize: "24px",
               fontWeight: 900,
               color: "#111827",
-              margin: "0 0 14px",
+              margin: 0,
               lineHeight: 1.18,
               letterSpacing: "-1px",
             }}
@@ -212,30 +202,6 @@ export const EditorMagazineHeader = ({
             {highlight ? (
               <span style={{ color: "var(--note-palette-accent, #374151)" }}>{highlight}</span>
             ) : null}
-          </p>
-
-          <div
-            style={{
-              width: "48px",
-              height: "3px",
-              background: isNative
-                ? "linear-gradient(to right, #4b5563, #9ca3af)"
-                : "linear-gradient(to right, var(--note-palette-accent, #374151), color-mix(in srgb, var(--note-palette-accent, #374151) 68%, #ffffff))",
-              borderRadius: "2px",
-              marginBottom: "12px",
-            }}
-          />
-
-          <p
-            style={{
-              fontSize: "13px",
-              color: "#9ca3af",
-              margin: 0,
-              lineHeight: 1.7,
-              letterSpacing: "0.5px",
-            }}
-          >
-            {subtitleText}
           </p>
         </div>
 
@@ -273,7 +239,7 @@ export const EditorMagazineHeader = ({
               {sections.length} PARTS · 章节导览
             </span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-start", gap: "8px", width: "100%" }}>
             {sections.map((section, idx) => {
               const isHighlighted = idx < sections.length - 1;
               const useSolidAccent = isHighlighted && !isNative;
@@ -285,9 +251,11 @@ export const EditorMagazineHeader = ({
                   style={
                     useSolidAccent
                       ? {
+                          minWidth: 0,
                           width: "146px",
+                          maxWidth: "100%",
+                          flex: "0 0 auto",
                           boxSizing: "border-box",
-                          flexShrink: 0,
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "stretch",
@@ -299,9 +267,11 @@ export const EditorMagazineHeader = ({
                           cursor: "pointer",
                         }
                       : {
+                          minWidth: 0,
                           width: "146px",
+                          maxWidth: "100%",
+                          flex: "0 0 auto",
                           boxSizing: "border-box",
-                          flexShrink: 0,
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "stretch",
