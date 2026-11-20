@@ -10,6 +10,7 @@ export type NoteImportSnapshot = {
   format: ImportFormat; summary?: ImportSummary; error?: string;
   includeUnreferencedAttachments: boolean;
   skipInvalidEvernoteAttachments: boolean;
+  markdownFolderName?: string; keepMarkdownRoot?: boolean;
   progress?: ImportProgress; scanningPath?: string; parentId: string;
   folders: ImportNotebook[]; issues: ImportIssue[]; results: ImportNoteResult[];
   destinations: Notebook[]; destinationStatus: "loading" | "ready" | "error";
@@ -23,7 +24,7 @@ export const canConfirmImportDestination = (state: NoteImportSnapshot) => {
 };
 
 export class NoteImportController {
-  private snapshot: NoteImportSnapshot = { open: false, phase: "idle", format: "evernote", includeUnreferencedAttachments: true, skipInvalidEvernoteAttachments: false, parentId: "", folders: [], issues: [], results: [], resultCount: 0, destinations: [] };
+  private snapshot: NoteImportSnapshot = { open: false, phase: "idle", format: "evernote", includeUnreferencedAttachments: true, skipInvalidEvernoteAttachments: false, parentId: "", folders: [], issues: [], results: [], resultCount: 0, destinations: [], destinationStatus: "ready" };
   private files: ImportFile[] = [];
   private listeners = new Set<() => void>();
   private reader?: BrowserImportReader;
@@ -86,10 +87,15 @@ export class NoteImportController {
     this.update({ skipInvalidEvernoteAttachments });
     if (this.snapshot.phase === "ready") this.select(this.files, this.snapshot.parentId);
   };
-  select = (files: ImportFile[], parentId = "") => {
+  rejectMarkdownSelection = () => {
+    if (this.snapshot.format === "markdown" && this.snapshot.phase === "idle") this.update({ error: "chooseSingleMarkdownSource" });
+  };
+  setKeepMarkdownRoot = (keepMarkdownRoot: boolean) => {
+    const { phase, markdownFolderName, parentId } = this.snapshot;
+    if (phase === "ready" && markdownFolderName) this.select(this.files, parentId, markdownFolderName, keepMarkdownRoot);
+  };
+  select = (files: ImportFile[], parentId?: string, markdownFolderName?: string, keepMarkdownRoot = Boolean(markdownFolderName)) => {
     if (!files.length || this.snapshot.phase === "running" || this.snapshot.phase === "scanning") return;
-    this.files = files;
-    const options = { includeUnreferencedAttachments: this.snapshot.includeUnreferencedAttachments, skipInvalidEvernoteAttachments: this.snapshot.skipInvalidEvernoteAttachments };
     const generation = ++this.generation;
     const markdown = this.snapshot.format === "markdown";
     if (markdown && !markdownFolderName && (files.length !== 1 || !isMarkdownFile(files[0]!.file))) {
